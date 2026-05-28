@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -83,3 +84,65 @@ class Chamado(models.Model):
             self.resolvido_em = None
 
         super().save(*args, **kwargs)
+
+
+class AccessLog(models.Model):
+
+    username = models.CharField(max_length=150)
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True
+    )
+
+    perfil = models.CharField(
+        max_length=40,
+        blank=True
+    )
+
+    ip = models.GenericIPAddressField(
+        blank=True,
+        null=True
+    )
+
+    user_agent = models.TextField(blank=True)
+
+    sucesso = models.BooleanField(default=False)
+
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        status = 'sucesso' if self.sucesso else 'falha'
+        return f'{self.username} - {status} - {self.criado_em}'
+
+
+class ActionLog(models.Model):
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True
+    )
+
+    perfil = models.CharField(
+        max_length=40,
+        blank=True
+    )
+
+    acao = models.CharField(max_length=80)
+
+    detalhe = models.TextField(blank=True)
+
+    ip = models.GenericIPAddressField(
+        blank=True,
+        null=True
+    )
+
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        usuario = self.usuario.username if self.usuario else 'sistema'
+        return f'{usuario} - {self.acao} - {self.criado_em}'

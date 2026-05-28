@@ -7,11 +7,9 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   "https://delta-chamados-production.up.railway.app";
 
-const LOGIN_USER = process.env.NEXT_PUBLIC_LOGIN_USER ?? "admin";
-const LOGIN_PASSWORD = process.env.NEXT_PUBLIC_LOGIN_PASSWORD ?? "delta123";
 const DIAS_NO_HISTORICO = 30;
 
-type Aba = "chamados" | "historico" | "condominios";
+type Aba = "chamados" | "historico" | "condominios" | "admin";
 
 type Condominio = {
   id: number;
@@ -31,6 +29,33 @@ type Chamado = {
   criado_em?: string;
   atualizado_em?: string;
   resolvido_em?: string | null;
+};
+
+type UsuarioLogado = {
+  id: number;
+  username: string;
+  perfil: "admin" | "monitoramento" | "tecnico";
+  nome: string;
+};
+
+type UsuarioSistema = {
+  id: number;
+  username: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  is_active: boolean;
+  perfil: "admin" | "monitoramento" | "tecnico";
+};
+
+type AccessLog = {
+  id: number;
+  username: string;
+  perfil: string;
+  ip?: string | null;
+  user_agent: string;
+  sucesso: boolean;
+  criado_em: string;
 };
 
 function chamadoEstaNoHistorico(chamado: Chamado) {
@@ -65,6 +90,22 @@ export default function Home() {
       typeof window !== "undefined" &&
       localStorage.getItem("delta-logado") === "true"
   );
+  const [token, setToken] = useState(
+    () =>
+      (typeof window !== "undefined" && localStorage.getItem("delta-token")) ||
+      ""
+  );
+  const [usuarioLogado, setUsuarioLogado] = useState<UsuarioLogado | null>(
+    () => {
+      if (typeof window === "undefined") {
+        return null;
+      }
+
+      const usuarioSalvo = localStorage.getItem("delta-user");
+
+      return usuarioSalvo ? JSON.parse(usuarioSalvo) : null;
+    }
+  );
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [erroLogin, setErroLogin] = useState("");
@@ -72,6 +113,8 @@ export default function Home() {
   const [aba, setAba] = useState<Aba>("chamados");
   const [chamados, setChamados] = useState<Chamado[]>([]);
   const [condominios, setCondominios] = useState<Condominio[]>([]);
+  const [usuarios, setUsuarios] = useState<UsuarioSistema[]>([]);
+  const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
 
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -91,6 +134,11 @@ export default function Home() {
 
   const [nomeCondominio, setNomeCondominio] = useState("");
   const [enderecoCondominio, setEnderecoCondominio] = useState("");
+
+  const [novoUsuario, setNovoUsuario] = useState("");
+  const [novaSenha, setNovaSenha] = useState("");
+  const [novoPerfil, setNovoPerfil] =
+    useState<UsuarioSistema["perfil"]>("monitoramento");
 
   const chamadosAbertos = useMemo(
     () => chamados.filter((chamado) => chamado.status !== "resolvido"),
@@ -120,9 +168,17 @@ export default function Home() {
     [edicaoImagem]
   );
 
+  const authHeaders = useMemo(
+    () => ({
+      Authorization: `Token ${token}`,
+    }),
+    [token]
+  );
+
   async function carregarChamados() {
     const response = await fetch(`${API_URL}/api/chamados/`, {
       cache: "no-store",
+      headers: authHeaders,
     });
     const data = await response.json();
     setChamados(data);
@@ -131,9 +187,35 @@ export default function Home() {
   async function carregarCondominios() {
     const response = await fetch(`${API_URL}/api/condominios/`, {
       cache: "no-store",
+      headers: authHeaders,
     });
     const data = await response.json();
     setCondominios(data);
+  }
+
+  async function carregarAdmin() {
+    if (usuarioLogado?.perfil !== "admin") {
+      return;
+    }
+
+    const [usuariosResponse, logsResponse] = await Promise.all([
+      fetch(`${API_URL}/api/usuarios/`, {
+        cache: "no-store",
+        headers: authHeaders,
+      }),
+      fetch(`${API_URL}/api/access-logs/`, {
+        cache: "no-store",
+        headers: authHeaders,
+      }),
+    ]);
+
+    if (usuariosResponse.ok) {
+      setUsuarios(await usuariosResponse.json());
+    }
+
+    if (logsResponse.ok) {
+      setAccessLogs((await logsResponse.json()).slice(0, 20));
+    }
   }
 
   async function cadastrarCondominio() {
@@ -145,6 +227,7 @@ export default function Home() {
     const response = await fetch(`${API_URL}/api/condominios/`, {
       method: "POST",
       headers: {
+        ...authHeaders,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -173,6 +256,40 @@ export default function Home() {
     alert("Condomínio cadastrado!");
   }
 
+  async function cadastrarUsuario() {
+    if (!novoUsuario || !novaSenha || !novoPerfil) {
+      alert("Preencha usuário, senha e perfil");
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/api/usuarios/`, {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: novoUsuario,
+        password: novaSenha,
+        perfil: novoPerfil,
+        is_active: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      console.log(data);
+      alert("Erro ao criar usuário");
+      return;
+    }
+
+    setNovoUsuario("");
+    setNovaSenha("");
+    setNovoPerfil("monitoramento");
+    await carregarAdmin();
+    alert("Usuário criado!");
+  }
+
   async function criarChamado() {
     if (!titulo || !descricao || !condominio) {
       alert("Preencha todos os campos");
@@ -193,6 +310,7 @@ export default function Home() {
 
     const response = await fetch(`${API_URL}/api/chamados/`, {
       method: "POST",
+      headers: authHeaders,
       body: formData,
     });
 
@@ -216,6 +334,7 @@ export default function Home() {
     await fetch(`${API_URL}/api/chamados/${id}/`, {
       method: "PATCH",
       headers: {
+        ...authHeaders,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -230,6 +349,7 @@ export default function Home() {
     await fetch(`${API_URL}/api/chamados/${id}/`, {
       method: "PATCH",
       headers: {
+        ...authHeaders,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -277,6 +397,7 @@ export default function Home() {
 
       const response = await fetch(`${API_URL}/api/chamados/${id}/`, {
         method: "PATCH",
+        headers: authHeaders,
         body: formData,
       });
 
@@ -290,6 +411,7 @@ export default function Home() {
       const response = await fetch(`${API_URL}/api/chamados/${id}/`, {
         method: "PATCH",
         headers: {
+          ...authHeaders,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -313,21 +435,41 @@ export default function Home() {
     await carregarChamados();
   }
 
-  function entrar() {
-    if (usuario === LOGIN_USER && senha === LOGIN_PASSWORD) {
-      localStorage.setItem("delta-logado", "true");
-      setLogado(true);
-      setErroLogin("");
-      setSenha("");
+  async function entrar() {
+    const response = await fetch(`${API_URL}/api/login/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: usuario,
+        password: senha,
+      }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      setErroLogin(data.detail || "Usuário ou senha inválidos.");
       return;
     }
 
-    setErroLogin("Usuário ou senha inválidos.");
+    localStorage.setItem("delta-logado", "true");
+    localStorage.setItem("delta-token", data.token);
+    localStorage.setItem("delta-user", JSON.stringify(data.user));
+    setToken(data.token);
+    setUsuarioLogado(data.user);
+    setLogado(true);
+    setErroLogin("");
+    setSenha("");
   }
 
   function sair() {
     localStorage.removeItem("delta-logado");
+    localStorage.removeItem("delta-token");
+    localStorage.removeItem("delta-user");
     setLogado(false);
+    setToken("");
+    setUsuarioLogado(null);
     setUsuario("");
     setSenha("");
     setErroLogin("");
@@ -350,22 +492,24 @@ export default function Home() {
   }, [edicaoImagemPreview]);
 
   useEffect(() => {
-    if (!logado) {
+    if (!logado || !token) {
       return;
     }
 
     Promise.all([
-      fetch(`${API_URL}/api/chamados/`, { cache: "no-store" }).then(
-        (response) => response.json()
-      ),
-      fetch(`${API_URL}/api/condominios/`, { cache: "no-store" }).then(
-        (response) => response.json()
-      ),
+      fetch(`${API_URL}/api/chamados/`, {
+        cache: "no-store",
+        headers: authHeaders,
+      }).then((response) => response.json()),
+      fetch(`${API_URL}/api/condominios/`, {
+        cache: "no-store",
+        headers: authHeaders,
+      }).then((response) => response.json()),
     ]).then(([listaChamados, listaCondominios]) => {
       setChamados(listaChamados);
       setCondominios(listaCondominios);
     });
-  }, [logado]);
+  }, [authHeaders, logado, token]);
 
   if (!logado) {
     return (
@@ -518,6 +662,22 @@ export default function Home() {
             >
               Condomínios
             </button>
+
+            {usuarioLogado?.perfil === "admin" && (
+              <button
+                onClick={() => {
+                  setAba("admin");
+                  carregarAdmin();
+                }}
+                className={`rounded-md p-3 text-left font-semibold transition ${
+                  aba === "admin"
+                    ? "bg-white text-black"
+                    : "bg-zinc-900 text-white hover:bg-zinc-800"
+                }`}
+              >
+                Admin
+              </button>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
@@ -558,6 +718,7 @@ export default function Home() {
                 </h1>
                 <p className="text-zinc-400">
                   Gestão técnica de ocorrências
+                  {usuarioLogado && ` - ${usuarioLogado.perfil}`}
                 </p>
               </div>
 
@@ -621,6 +782,118 @@ export default function Home() {
                   ))}
                 </div>
               </>
+            )}
+
+            {aba === "admin" && usuarioLogado?.perfil === "admin" && (
+              <div className="grid gap-8">
+                <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
+                  <h2 className="mb-5 text-2xl font-semibold">
+                    Criar usuário
+                  </h2>
+
+                  <div className="grid gap-4 md:grid-cols-[1fr_1fr_220px_auto]">
+                    <input
+                      type="text"
+                      placeholder="Usuário"
+                      value={novoUsuario}
+                      onChange={(event) => setNovoUsuario(event.target.value)}
+                      className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                    />
+
+                    <input
+                      type="password"
+                      placeholder="Senha"
+                      value={novaSenha}
+                      onChange={(event) => setNovaSenha(event.target.value)}
+                      className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                    />
+
+                    <select
+                      value={novoPerfil}
+                      onChange={(event) =>
+                        setNovoPerfil(
+                          event.target.value as UsuarioSistema["perfil"]
+                        )
+                      }
+                      className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                    >
+                      <option value="admin">Admin</option>
+                      <option value="monitoramento">Monitoramento</option>
+                      <option value="tecnico">Técnico</option>
+                    </select>
+
+                    <button
+                      onClick={cadastrarUsuario}
+                      className="rounded-md bg-white px-5 py-3 font-semibold text-black transition hover:bg-zinc-200"
+                    >
+                      Criar
+                    </button>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-xl">
+                  <h2 className="mb-5 text-2xl font-semibold">Usuários</h2>
+
+                  <div className="grid gap-3">
+                    {usuarios.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex flex-col gap-2 rounded-md border border-zinc-800 bg-zinc-950 p-4 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div>
+                          <p className="font-semibold">{item.username}</p>
+                          <p className="text-sm text-zinc-500">
+                            {item.perfil} -{" "}
+                            {item.is_active ? "ativo" : "inativo"}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-xl">
+                  <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <h2 className="text-2xl font-semibold">
+                      Logs de acesso
+                    </h2>
+
+                    <button
+                      onClick={carregarAdmin}
+                      className="rounded-md border border-zinc-700 px-4 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                    >
+                      Atualizar
+                    </button>
+                  </div>
+
+                  <div className="grid gap-3">
+                    {accessLogs.map((item) => (
+                      <div
+                        key={item.id}
+                        className="rounded-md border border-zinc-800 bg-zinc-950 p-4"
+                      >
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <p className="font-semibold">{item.username}</p>
+                          <span
+                            className={`rounded-full px-3 py-1 text-sm font-medium ${
+                              item.sucesso
+                                ? "bg-green-500/20 text-green-300"
+                                : "bg-red-500/20 text-red-300"
+                            }`}
+                          >
+                            {item.sucesso ? "sucesso" : "falha"}
+                          </span>
+                        </div>
+
+                        <p className="mt-2 text-sm text-zinc-500">
+                          {formatarData(item.criado_em)} - IP:{" "}
+                          {item.ip || "não identificado"} - {item.perfil}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             )}
 
             {(aba === "chamados" || aba === "historico") && (
