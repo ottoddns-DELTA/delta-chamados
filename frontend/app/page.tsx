@@ -9,7 +9,7 @@ const API_URL =
 
 const DIAS_NO_HISTORICO = 30;
 
-type Aba = "chamados" | "historico" | "condominios" | "admin";
+type Aba = "chamados" | "andamento" | "historico" | "condominios" | "admin";
 type AbaAdmin = "usuarios" | "logs";
 
 type Condominio = {
@@ -151,7 +151,12 @@ export default function Home() {
   const [edicaoUsuarioSenha, setEdicaoUsuarioSenha] = useState("");
 
   const chamadosAbertos = useMemo(
-    () => chamados.filter((chamado) => chamado.status !== "resolvido"),
+    () => chamados.filter((chamado) => chamado.status === "aberto"),
+    [chamados]
+  );
+
+  const chamadosEmAtendimento = useMemo(
+    () => chamados.filter((chamado) => chamado.status === "andamento"),
     [chamados]
   );
 
@@ -752,6 +757,17 @@ export default function Home() {
             </button>
 
             <button
+              onClick={() => setAba("andamento")}
+              className={`rounded-md p-3 text-left font-semibold transition ${
+                aba === "andamento"
+                  ? "bg-white text-black"
+                  : "bg-zinc-900 text-white hover:bg-zinc-800"
+              }`}
+            >
+              Em Atendimento
+            </button>
+
+            <button
               onClick={() => setAba("historico")}
               className={`rounded-md p-3 text-left font-semibold transition ${
                 aba === "historico"
@@ -794,6 +810,13 @@ export default function Home() {
             <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
               <p className="text-sm text-zinc-400">Chamados Abertos</p>
               <h2 className="text-3xl font-bold">{chamadosAbertos.length}</h2>
+            </div>
+
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+              <p className="text-sm text-zinc-400">Em Atendimento</p>
+              <h2 className="text-3xl font-bold text-blue-500">
+                {chamadosEmAtendimento.length}
+              </h2>
             </div>
 
             <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
@@ -1144,7 +1167,7 @@ export default function Home() {
               </div>
             )}
 
-            {(aba === "chamados" || aba === "historico") && (
+            {(aba === "chamados" || aba === "andamento" || aba === "historico") && (
               <>
                 {aba === "chamados" && (
                   <div className="mb-8 rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
@@ -1267,7 +1290,9 @@ export default function Home() {
                     .filter((chamado) =>
                       aba === "historico"
                         ? chamadoEstaNoHistorico(chamado)
-                        : chamado.status !== "resolvido"
+                        : aba === "andamento"
+                          ? chamado.status === "andamento"
+                          : chamado.status === "aberto"
                     )
                     .map((chamado) => (
                       <div
@@ -1548,7 +1573,7 @@ export default function Home() {
                                 onClick={() => resolverChamado(chamado.id)}
                                 className="rounded-md bg-green-600 px-5 py-3 font-medium text-white transition hover:bg-green-700"
                               >
-                                Resolver
+                                Marcar como resolvido
                               </button>
                             )}
                           </div>

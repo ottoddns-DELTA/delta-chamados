@@ -291,7 +291,7 @@ async function registrarPush(tokenAtual: string) {
       <StatusBar style="light" />
       <View style={styles.header}>
         <View>
-          <Text style={styles.logo}>Chamados Abertos</Text>
+          <Text style={styles.logo}>Chamados</Text>
           <Text style={styles.subtitle}>
             {usuario?.nome} - {usuario?.perfil}
           </Text>
@@ -349,7 +349,7 @@ async function registrarPush(tokenAtual: string) {
                 style={[styles.actionButton, styles.resolveButton]}
                 onPress={() => alterarStatus(item.id, "resolvido")}
               >
-                <Text style={styles.actionButtonText}>Resolver</Text>
+                <Text style={styles.actionButtonText}>Marcar como resolvido</Text>
               </TouchableOpacity>
             </View>
           </View>

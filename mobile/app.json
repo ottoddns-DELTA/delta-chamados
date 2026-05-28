@@ -4,9 +4,19 @@
     "slug": "delta-chamados",
     "version": "0.1.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
     "android": {
       "package": "com.deltacondominios.chamados",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      },
       "permissions": [
         "POST_NOTIFICATIONS"
       ]
@@ -15,7 +25,7 @@
       "expo-notifications"
     ],
     "extra": {
-      "apiUrl": "https://deltachamados.up.railway.app",
+      "apiUrl": "https://delta-chamados-production.up.railway.app",
       "eas": {
         "projectId": "d90008ad-f73c-4bd8-8c64-fab31a6ddaa7"
       }
