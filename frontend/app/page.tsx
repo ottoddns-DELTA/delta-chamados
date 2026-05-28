@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+const API_URL = "https://delta-chamados-production.up.railway.app";
+
 export default function Home() {
   const [aba, setAba] = useState("chamados");
 
@@ -18,13 +20,13 @@ export default function Home() {
   const [enderecoCondominio, setEnderecoCondominio] = useState("");
 
   async function carregarChamados() {
-    const response = await fetch("http://127.0.0.1:8000/api/chamados/");
+    const response = await fetch(`${API_URL}/api/chamados/`);
     const data = await response.json();
     setChamados(data);
   }
 
   async function carregarCondominios() {
-    const response = await fetch("http://127.0.0.1:8000/api/condominios/");
+    const response = await fetch(`${API_URL}/api/condominios/`);
     const data = await response.json();
     setCondominios(data);
   }
@@ -35,7 +37,7 @@ export default function Home() {
       return;
     }
 
-    const response = await fetch("http://127.0.0.1:8000/api/condominios/", {
+    const response = await fetch(`${API_URL}/api/condominios/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -80,7 +82,7 @@ export default function Home() {
       formData.append("imagem", imagem);
     }
 
-    const response = await fetch("http://127.0.0.1:8000/api/chamados/", {
+    const response = await fetch(`${API_URL}/api/chamados/`, {
       method: "POST",
       body: formData,
     });
@@ -103,7 +105,7 @@ export default function Home() {
   }
 
   async function resolverChamado(id: number) {
-    await fetch(`http://127.0.0.1:8000/api/chamados/${id}/`, {
+    await fetch(`${API_URL}/api/chamados/${id}/`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -117,7 +119,7 @@ export default function Home() {
   }
 
   async function iniciarAtendimento(id: number) {
-    await fetch(`http://127.0.0.1:8000/api/chamados/${id}/`, {
+    await fetch(`${API_URL}/api/chamados/${id}/`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
