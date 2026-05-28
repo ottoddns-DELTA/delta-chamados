@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class Condominio(models.Model):
@@ -51,5 +52,34 @@ class Chamado(models.Model):
 
     criado_em = models.DateTimeField(auto_now_add=True)
 
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    resolvido_em = models.DateTimeField(
+        blank=True,
+        null=True
+    )
+
     def __str__(self):
         return self.titulo
+
+    def save(self, *args, **kwargs):
+        status_anterior = None
+
+        if self.pk:
+            status_anterior = (
+                Chamado.objects
+                .filter(pk=self.pk)
+                .values_list('status', flat=True)
+                .first()
+            )
+
+        if self.status == 'resolvido' and not self.resolvido_em:
+            self.resolvido_em = timezone.now()
+
+        if (
+            status_anterior == 'resolvido'
+            and self.status != 'resolvido'
+        ):
+            self.resolvido_em = None
+
+        super().save(*args, **kwargs)

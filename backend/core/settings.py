@@ -15,6 +15,7 @@ ALLOWED_HOSTS = [
     "delta-chamados.onrender.com",
     "delta-chamados-production.up.railway.app",
     "precious-elegance-production-aa2e.up.railway.app",
+    ".up.railway.app",
 ]
 
 INSTALLED_APPS = [

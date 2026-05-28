@@ -9,6 +9,7 @@ const API_URL =
 
 const LOGIN_USER = process.env.NEXT_PUBLIC_LOGIN_USER ?? "admin";
 const LOGIN_PASSWORD = process.env.NEXT_PUBLIC_LOGIN_PASSWORD ?? "delta123";
+const DIAS_NO_HISTORICO = 30;
 
 type Aba = "chamados" | "historico" | "condominios";
 
@@ -27,7 +28,36 @@ type Chamado = {
   urgente: boolean;
   imagem?: string | null;
   status: "aberto" | "andamento" | "resolvido";
+  criado_em?: string;
+  atualizado_em?: string;
+  resolvido_em?: string | null;
 };
+
+function chamadoEstaNoHistorico(chamado: Chamado) {
+  if (chamado.status !== "resolvido") {
+    return false;
+  }
+
+  if (!chamado.resolvido_em) {
+    return true;
+  }
+
+  const dataResolucao = new Date(chamado.resolvido_em).getTime();
+  const limite = Date.now() - DIAS_NO_HISTORICO * 24 * 60 * 60 * 1000;
+
+  return dataResolucao >= limite;
+}
+
+function formatarData(data?: string | null) {
+  if (!data) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(data));
+}
 
 export default function Home() {
   const [logado, setLogado] = useState(
@@ -49,6 +79,16 @@ export default function Home() {
   const [urgente, setUrgente] = useState(false);
   const [imagem, setImagem] = useState<File | null>(null);
 
+  const [editandoChamadoId, setEditandoChamadoId] = useState<number | null>(
+    null
+  );
+  const [edicaoTitulo, setEdicaoTitulo] = useState("");
+  const [edicaoDescricao, setEdicaoDescricao] = useState("");
+  const [edicaoCondominio, setEdicaoCondominio] = useState("");
+  const [edicaoUrgente, setEdicaoUrgente] = useState(false);
+  const [edicaoImagem, setEdicaoImagem] = useState<File | null>(null);
+  const [edicaoRemoverImagem, setEdicaoRemoverImagem] = useState(false);
+
   const [nomeCondominio, setNomeCondominio] = useState("");
   const [enderecoCondominio, setEnderecoCondominio] = useState("");
 
@@ -66,7 +106,7 @@ export default function Home() {
   );
 
   const chamadosResolvidos = useMemo(
-    () => chamados.filter((chamado) => chamado.status === "resolvido"),
+    () => chamados.filter(chamadoEstaNoHistorico),
     [chamados]
   );
 
@@ -75,14 +115,23 @@ export default function Home() {
     [imagem]
   );
 
+  const edicaoImagemPreview = useMemo(
+    () => (edicaoImagem ? URL.createObjectURL(edicaoImagem) : ""),
+    [edicaoImagem]
+  );
+
   async function carregarChamados() {
-    const response = await fetch(`${API_URL}/api/chamados/`);
+    const response = await fetch(`${API_URL}/api/chamados/`, {
+      cache: "no-store",
+    });
     const data = await response.json();
     setChamados(data);
   }
 
   async function carregarCondominios() {
-    const response = await fetch(`${API_URL}/api/condominios/`);
+    const response = await fetch(`${API_URL}/api/condominios/`, {
+      cache: "no-store",
+    });
     const data = await response.json();
     setCondominios(data);
   }
@@ -104,13 +153,18 @@ export default function Home() {
       }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const data = await response.json();
       console.log(data);
       alert("Erro ao cadastrar condomínio");
       return;
     }
 
+    setCondominios((listaAtual) => [
+      data,
+      ...listaAtual.filter((item) => item.id !== data.id),
+    ]);
     setNomeCondominio("");
     setEnderecoCondominio("");
 
@@ -186,6 +240,79 @@ export default function Home() {
     carregarChamados();
   }
 
+  function iniciarEdicao(chamado: Chamado) {
+    setEditandoChamadoId(chamado.id);
+    setEdicaoTitulo(chamado.titulo);
+    setEdicaoDescricao(chamado.descricao);
+    setEdicaoCondominio(String(chamado.condominio));
+    setEdicaoUrgente(chamado.urgente);
+    setEdicaoImagem(null);
+    setEdicaoRemoverImagem(false);
+  }
+
+  function cancelarEdicao() {
+    setEditandoChamadoId(null);
+    setEdicaoTitulo("");
+    setEdicaoDescricao("");
+    setEdicaoCondominio("");
+    setEdicaoUrgente(false);
+    setEdicaoImagem(null);
+    setEdicaoRemoverImagem(false);
+  }
+
+  async function salvarEdicaoChamado(id: number) {
+    if (!edicaoTitulo || !edicaoDescricao || !edicaoCondominio) {
+      alert("Preencha todos os campos");
+      return;
+    }
+
+    if (edicaoImagem) {
+      const formData = new FormData();
+
+      formData.append("titulo", edicaoTitulo);
+      formData.append("descricao", edicaoDescricao);
+      formData.append("condominio", edicaoCondominio);
+      formData.append("urgente", edicaoUrgente ? "true" : "false");
+      formData.append("imagem", edicaoImagem);
+
+      const response = await fetch(`${API_URL}/api/chamados/${id}/`, {
+        method: "PATCH",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        console.log(data);
+        alert("Erro ao editar chamado");
+        return;
+      }
+    } else {
+      const response = await fetch(`${API_URL}/api/chamados/${id}/`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          titulo: edicaoTitulo,
+          descricao: edicaoDescricao,
+          condominio: Number(edicaoCondominio),
+          urgente: edicaoUrgente,
+          ...(edicaoRemoverImagem ? { imagem: null } : {}),
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        console.log(data);
+        alert("Erro ao editar chamado");
+        return;
+      }
+    }
+
+    cancelarEdicao();
+    await carregarChamados();
+  }
+
   function entrar() {
     if (usuario === LOGIN_USER && senha === LOGIN_PASSWORD) {
       localStorage.setItem("delta-logado", "true");
@@ -215,14 +342,24 @@ export default function Home() {
   }, [imagemPreview]);
 
   useEffect(() => {
+    return () => {
+      if (edicaoImagemPreview) {
+        URL.revokeObjectURL(edicaoImagemPreview);
+      }
+    };
+  }, [edicaoImagemPreview]);
+
+  useEffect(() => {
     if (!logado) {
       return;
     }
 
     Promise.all([
-      fetch(`${API_URL}/api/chamados/`).then((response) => response.json()),
-      fetch(`${API_URL}/api/condominios/`).then((response) =>
-        response.json()
+      fetch(`${API_URL}/api/chamados/`, { cache: "no-store" }).then(
+        (response) => response.json()
+      ),
+      fetch(`${API_URL}/api/condominios/`, { cache: "no-store" }).then(
+        (response) => response.json()
       ),
     ]).then(([listaChamados, listaCondominios]) => {
       setChamados(listaChamados);
@@ -608,7 +745,7 @@ export default function Home() {
                   {chamados
                     .filter((chamado) =>
                       aba === "historico"
-                        ? chamado.status === "resolvido"
+                        ? chamadoEstaNoHistorico(chamado)
                         : chamado.status !== "resolvido"
                     )
                     .map((chamado) => (
@@ -616,6 +753,182 @@ export default function Home() {
                         key={chamado.id}
                         className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-xl"
                       >
+                        {editandoChamadoId === chamado.id ? (
+                          <div className="grid gap-4">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                              <h2 className="text-2xl font-semibold">
+                                Editar chamado
+                              </h2>
+
+                              <span className="rounded-full bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-300">
+                                #{chamado.id}
+                              </span>
+                            </div>
+
+                            <input
+                              type="text"
+                              placeholder="Título"
+                              value={edicaoTitulo}
+                              onChange={(event) =>
+                                setEdicaoTitulo(event.target.value)
+                              }
+                              className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                            />
+
+                            <textarea
+                              placeholder="Descrição"
+                              value={edicaoDescricao}
+                              onChange={(event) =>
+                                setEdicaoDescricao(event.target.value)
+                              }
+                              className="min-h-28 rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                            />
+
+                            <select
+                              value={edicaoCondominio}
+                              onChange={(event) =>
+                                setEdicaoCondominio(event.target.value)
+                              }
+                              className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                            >
+                              <option value="">Selecione o condomínio</option>
+
+                              {condominios.map((item) => (
+                                <option key={item.id} value={item.id}>
+                                  {item.nome}
+                                </option>
+                              ))}
+                            </select>
+
+                            <label className="flex items-center gap-3 rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white">
+                              <input
+                                type="checkbox"
+                                checked={edicaoUrgente}
+                                onChange={(event) =>
+                                  setEdicaoUrgente(event.target.checked)
+                                }
+                                className="h-5 w-5"
+                              />
+
+                              <span>Este chamado é urgente</span>
+                            </label>
+
+                            {chamado.imagem &&
+                              !edicaoImagem &&
+                              !edicaoRemoverImagem && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <p className="text-sm text-zinc-400">
+                                      Foto atual
+                                    </p>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setEdicaoRemoverImagem(true)
+                                      }
+                                      className="rounded-md border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-300 transition hover:border-red-400 hover:text-red-200"
+                                    >
+                                      Remover foto atual
+                                    </button>
+                                  </div>
+
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={chamado.imagem}
+                                    alt="Foto atual do chamado"
+                                    className="max-h-80 w-full rounded-md border border-zinc-800 object-contain"
+                                  />
+                                </div>
+                              )}
+
+                            {edicaoRemoverImagem && !edicaoImagem && (
+                              <p className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                                A foto atual será removida ao salvar.
+                              </p>
+                            )}
+
+                            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-zinc-700 bg-zinc-950 p-6 text-white transition hover:border-white">
+                              <span className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                                Foto
+                              </span>
+
+                              <span className="font-semibold">
+                                Clique aqui para trocar a foto
+                              </span>
+
+                              <span className="text-sm text-zinc-400">
+                                PNG, JPG ou JPEG
+                              </span>
+
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(event) => {
+                                  if (
+                                    event.target.files &&
+                                    event.target.files[0]
+                                  ) {
+                                    setEdicaoImagem(event.target.files[0]);
+                                    setEdicaoRemoverImagem(false);
+                                  } else {
+                                    setEdicaoImagem(null);
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                            </label>
+
+                            {edicaoImagem && (
+                              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                                <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                  <p className="text-sm text-zinc-400">
+                                    Nova imagem:{" "}
+                                    <span className="text-zinc-200">
+                                      {edicaoImagem.name}
+                                    </span>
+                                  </p>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setEdicaoImagem(null)}
+                                    className="rounded-md border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-300 transition hover:border-red-400 hover:text-red-200"
+                                  >
+                                    Remover troca
+                                  </button>
+                                </div>
+
+                                {edicaoImagemPreview && (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={edicaoImagemPreview}
+                                    alt="Prévia da nova imagem"
+                                    className="max-h-80 w-full rounded-md border border-zinc-800 object-contain"
+                                  />
+                                )}
+                              </div>
+                            )}
+
+                            <div className="flex flex-wrap gap-3">
+                              <button
+                                onClick={() =>
+                                  salvarEdicaoChamado(chamado.id)
+                                }
+                                className="rounded-md bg-white px-5 py-3 font-semibold text-black transition hover:bg-zinc-200"
+                              >
+                                Salvar alterações
+                              </button>
+
+                              <button
+                                onClick={cancelarEdicao}
+                                className="rounded-md border border-zinc-700 px-5 py-3 font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
                         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <h2 className="text-2xl font-semibold">
                             {chamado.titulo}
@@ -673,6 +986,14 @@ export default function Home() {
                               {chamado.condominio_nome || chamado.condominio}
                             </p>
 
+                            {chamado.status === "resolvido" &&
+                              chamado.resolvido_em && (
+                                <p>
+                                  Resolvido em:{" "}
+                                  {formatarData(chamado.resolvido_em)}
+                                </p>
+                              )}
+
                             {chamado.urgente ? (
                               <p className="font-semibold text-red-400">
                                 Urgente
@@ -683,6 +1004,13 @@ export default function Home() {
                           </div>
 
                           <div className="flex flex-wrap gap-3">
+                            <button
+                              onClick={() => iniciarEdicao(chamado)}
+                              className="rounded-md border border-zinc-700 px-5 py-3 font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                            >
+                              Editar
+                            </button>
+
                             {chamado.status === "aberto" && (
                               <button
                                 onClick={() =>
@@ -704,6 +1032,8 @@ export default function Home() {
                             )}
                           </div>
                         </div>
+                          </>
+                        )}
                       </div>
                     ))}
                 </div>
