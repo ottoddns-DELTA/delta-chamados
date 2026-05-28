@@ -718,9 +718,9 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-zinc-950 text-white">
       <div className="flex min-h-screen flex-col lg:flex-row">
-        <aside className="border-b border-zinc-800 bg-black p-5 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r lg:p-6">
-          <div className="mb-6 flex items-center justify-between gap-4 lg:mb-8">
-            <div className="flex h-12 w-44 items-center">
+        <aside className="border-b border-zinc-800 bg-black p-5 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r lg:p-4">
+          <div className="mb-8 flex items-center justify-between gap-4 px-2 pt-2">
+            <div className="flex h-14 w-52 items-center">
               <Image
                 src="/delta-condominios-logo.png"
                 alt="Delta Condomínios"
@@ -748,7 +748,7 @@ export default function Home() {
                   : "bg-zinc-900 text-white hover:bg-zinc-800"
               }`}
             >
-              Chamados
+              Chamados Abertos
             </button>
 
             <button
@@ -792,7 +792,7 @@ export default function Home() {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
             <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-              <p className="text-sm text-zinc-400">Chamados</p>
+              <p className="text-sm text-zinc-400">Chamados Abertos</p>
               <h2 className="text-3xl font-bold">{chamadosAbertos.length}</h2>
             </div>
 
