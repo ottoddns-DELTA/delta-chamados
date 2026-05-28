@@ -7,6 +7,7 @@ from .views import (
     ChamadoViewSet,
     CondominioViewSet,
     LoginView,
+    PushDeviceViewSet,
     UserViewSet,
 )
 
@@ -17,6 +18,7 @@ router.register(r'condominios', CondominioViewSet)
 router.register(r'usuarios', UserViewSet)
 router.register(r'access-logs', AccessLogViewSet)
 router.register(r'action-logs', ActionLogViewSet)
+router.register(r'push-devices', PushDeviceViewSet, basename='push-devices')
 
 urlpatterns = [
     path('login/', LoginView.as_view()),

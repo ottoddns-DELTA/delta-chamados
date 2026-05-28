@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 
 from .auth_utils import perfil_usuario
-from .models import AccessLog, ActionLog, Chamado, Condominio
+from .models import AccessLog, ActionLog, Chamado, Condominio, PushDevice
 
 
 class CondominioSerializer(serializers.ModelSerializer):
@@ -96,3 +96,23 @@ class ActionLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = ActionLog
         fields = "__all__"
+
+
+class PushDeviceSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PushDevice
+        fields = [
+            'id',
+            'token',
+            'plataforma',
+            'ativo',
+            'criado_em',
+            'atualizado_em',
+        ]
+        read_only_fields = [
+            'id',
+            'ativo',
+            'criado_em',
+            'atualizado_em',
+        ]

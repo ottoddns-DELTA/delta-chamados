@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Delta Chamados",
+    "slug": "delta-chamados",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "android": {
+      "package": "com.deltacondominios.chamados",
+      "permissions": [
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      "expo-notifications"
+    ],
+    "extra": {
+      "apiUrl": "https://deltachamados.up.railway.app",
+      "eas": {
+        "projectId": "d90008ad-f73c-4bd8-8c64-fab31a6ddaa7"
+      }
+    },
+    "owner": "ottodelta"
+  }
+}

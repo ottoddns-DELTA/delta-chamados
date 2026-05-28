@@ -1,0 +1,29 @@
+{
+  "name": "delta-chamados-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "build:android": "eas build --platform android --profile preview",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "latest",
+    "expo-asset": "latest",
+    "expo-device": "latest",
+    "expo-notifications": "latest",
+    "expo-status-bar": "latest",
+    "react": "19.2.3",
+    "react-native": "latest"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@expo/ngrok": "^4.1.0",
+    "@types/react": "latest",
+    "eas-cli": "^16.25.0",
+    "typescript": "~6.0.3"
+  }
+}

@@ -146,3 +146,31 @@ class ActionLog(models.Model):
     def __str__(self):
         usuario = self.usuario.username if self.usuario else 'sistema'
         return f'{usuario} - {self.acao} - {self.criado_em}'
+
+
+class PushDevice(models.Model):
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='push_devices'
+    )
+
+    token = models.CharField(
+        max_length=255,
+        unique=True
+    )
+
+    plataforma = models.CharField(
+        max_length=40,
+        blank=True
+    )
+
+    ativo = models.BooleanField(default=True)
+
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.usuario.username} - {self.plataforma}'

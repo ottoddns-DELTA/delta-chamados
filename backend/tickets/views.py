@@ -8,17 +8,19 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .auth_utils import PERFIS, get_client_ip, perfil_usuario
-from .models import AccessLog, ActionLog, Chamado, Condominio
+from .models import AccessLog, ActionLog, Chamado, Condominio, PushDevice
 from .permissions import (
     AdminOnlyPermission,
     PerfilChamadoPermission,
     PerfilCondominioPermission,
 )
+from .push import enviar_push_novo_chamado
 from .serializers import (
     AccessLogSerializer,
     ActionLogSerializer,
     ChamadoSerializer,
     CondominioSerializer,
+    PushDeviceSerializer,
     UserSerializer,
 )
 
@@ -95,6 +97,7 @@ class ChamadoViewSet(viewsets.ModelViewSet):
             'criou_chamado',
             f'Chamado #{chamado.id}: {chamado.titulo}',
         )
+        enviar_push_novo_chamado(chamado)
 
     def perform_update(self, serializer):
         chamado = serializer.save()
@@ -214,3 +217,28 @@ class ActionLogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ActionLog.objects.all().order_by('-criado_em')
     serializer_class = ActionLogSerializer
     permission_classes = [AdminOnlyPermission]
+
+
+class PushDeviceViewSet(viewsets.ModelViewSet):
+
+    serializer_class = PushDeviceSerializer
+
+    def get_queryset(self):
+        return PushDevice.objects.filter(usuario=self.request.user)
+
+    def perform_create(self, serializer):
+        token = serializer.validated_data.get('token')
+        plataforma = serializer.validated_data.get('plataforma', '')
+
+        PushDevice.objects.update_or_create(
+            token=token,
+            defaults={
+                'usuario': self.request.user,
+                'plataforma': plataforma,
+                'ativo': True,
+            },
+        )
+
+    def perform_destroy(self, instance):
+        instance.ativo = False
+        instance.save(update_fields=['ativo', 'atualizado_em'])
