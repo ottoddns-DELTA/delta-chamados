@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 const API_URL =
@@ -29,7 +30,11 @@ type Chamado = {
 };
 
 export default function Home() {
-  const [logado, setLogado] = useState(false);
+  const [logado, setLogado] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      localStorage.getItem("delta-logado") === "true"
+  );
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [erroLogin, setErroLogin] = useState("");
@@ -63,6 +68,11 @@ export default function Home() {
   const chamadosResolvidos = useMemo(
     () => chamados.filter((chamado) => chamado.status === "resolvido"),
     [chamados]
+  );
+
+  const imagemPreview = useMemo(
+    () => (imagem ? URL.createObjectURL(imagem) : ""),
+    [imagem]
   );
 
   async function carregarChamados() {
@@ -197,16 +207,27 @@ export default function Home() {
   }
 
   useEffect(() => {
-    setLogado(localStorage.getItem("delta-logado") === "true");
-  }, []);
+    return () => {
+      if (imagemPreview) {
+        URL.revokeObjectURL(imagemPreview);
+      }
+    };
+  }, [imagemPreview]);
 
   useEffect(() => {
     if (!logado) {
       return;
     }
 
-    carregarChamados();
-    carregarCondominios();
+    Promise.all([
+      fetch(`${API_URL}/api/chamados/`).then((response) => response.json()),
+      fetch(`${API_URL}/api/condominios/`).then((response) =>
+        response.json()
+      ),
+    ]).then(([listaChamados, listaCondominios]) => {
+      setChamados(listaChamados);
+      setCondominios(listaCondominios);
+    });
   }, [logado]);
 
   if (!logado) {
@@ -308,7 +329,16 @@ export default function Home() {
       <div className="flex min-h-screen flex-col lg:flex-row">
         <aside className="border-b border-zinc-800 bg-black p-5 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r lg:p-6">
           <div className="mb-6 flex items-center justify-between gap-4 lg:mb-8">
-            <h1 className="text-3xl font-bold">Delta</h1>
+            <div className="flex h-12 w-44 items-center">
+              <Image
+                src="/delta-condominios-logo.png"
+                alt="Delta Condomínios"
+                width={340}
+                height={72}
+                priority
+                className="h-auto w-full object-contain"
+              />
+            </div>
 
             <button
               onClick={sair}
@@ -526,6 +556,8 @@ export default function Home() {
                           onChange={(event) => {
                             if (event.target.files && event.target.files[0]) {
                               setImagem(event.target.files[0]);
+                            } else {
+                              setImagem(null);
                             }
                           }}
                           className="hidden"
@@ -533,9 +565,33 @@ export default function Home() {
                       </label>
 
                       {imagem && (
-                        <p className="text-sm text-zinc-400">
-                          Imagem selecionada: {imagem.name}
-                        </p>
+                        <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-sm text-zinc-400">
+                              Imagem selecionada:{" "}
+                              <span className="text-zinc-200">
+                                {imagem.name}
+                              </span>
+                            </p>
+
+                            <button
+                              type="button"
+                              onClick={() => setImagem(null)}
+                              className="rounded-md border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-300 transition hover:border-red-400 hover:text-red-200"
+                            >
+                              Remover foto
+                            </button>
+                          </div>
+
+                          {imagemPreview && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={imagemPreview}
+                              alt="Prévia da imagem selecionada"
+                              className="max-h-80 w-full rounded-md border border-zinc-800 object-contain"
+                            />
+                          )}
+                        </div>
                       )}
 
                       <button
@@ -602,6 +658,7 @@ export default function Home() {
                         </p>
 
                         {chamado.imagem && (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={chamado.imagem}
                             alt="Imagem do chamado"
