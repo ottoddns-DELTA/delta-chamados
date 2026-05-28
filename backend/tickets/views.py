@@ -157,6 +157,14 @@ class UserViewSet(viewsets.ModelViewSet):
             f'Usuário #{user.id}: {user.username}',
         )
 
+    def perform_destroy(self, instance):
+        registrar_acao(
+            self.request,
+            'excluiu_usuario',
+            f'Usuário #{instance.id}: {instance.username}',
+        )
+        instance.delete()
+
     @action(detail=True, methods=['post'])
     def senha(self, request, pk=None):
         user = self.get_object()

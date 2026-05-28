@@ -141,6 +141,14 @@ export default function Home() {
   const [novaSenha, setNovaSenha] = useState("");
   const [novoPerfil, setNovoPerfil] =
     useState<UsuarioSistema["perfil"]>("monitoramento");
+  const [editandoUsuarioId, setEditandoUsuarioId] = useState<number | null>(
+    null
+  );
+  const [edicaoUsuarioNome, setEdicaoUsuarioNome] = useState("");
+  const [edicaoUsuarioPerfil, setEdicaoUsuarioPerfil] =
+    useState<UsuarioSistema["perfil"]>("monitoramento");
+  const [edicaoUsuarioAtivo, setEdicaoUsuarioAtivo] = useState(true);
+  const [edicaoUsuarioSenha, setEdicaoUsuarioSenha] = useState("");
 
   const chamadosAbertos = useMemo(
     () => chamados.filter((chamado) => chamado.status !== "resolvido"),
@@ -290,6 +298,106 @@ export default function Home() {
     setNovoPerfil("monitoramento");
     await carregarAdmin();
     alert("Usuário criado!");
+  }
+
+  function iniciarEdicaoUsuario(usuarioSistema: UsuarioSistema) {
+    setEditandoUsuarioId(usuarioSistema.id);
+    setEdicaoUsuarioNome(usuarioSistema.username);
+    setEdicaoUsuarioPerfil(usuarioSistema.perfil);
+    setEdicaoUsuarioAtivo(usuarioSistema.is_active);
+    setEdicaoUsuarioSenha("");
+  }
+
+  function cancelarEdicaoUsuario() {
+    setEditandoUsuarioId(null);
+    setEdicaoUsuarioNome("");
+    setEdicaoUsuarioPerfil("monitoramento");
+    setEdicaoUsuarioAtivo(true);
+    setEdicaoUsuarioSenha("");
+  }
+
+  async function salvarUsuario(id: number) {
+    if (!edicaoUsuarioNome || !edicaoUsuarioPerfil) {
+      alert("Preencha usuário e perfil");
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/api/usuarios/${id}/`, {
+      method: "PATCH",
+      headers: {
+        ...authHeaders,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: edicaoUsuarioNome,
+        perfil: edicaoUsuarioPerfil,
+        is_active: edicaoUsuarioAtivo,
+      }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      console.log(data);
+      alert("Erro ao editar usuário");
+      return;
+    }
+
+    if (edicaoUsuarioSenha) {
+      const senhaResponse = await fetch(
+        `${API_URL}/api/usuarios/${id}/senha/`,
+        {
+          method: "POST",
+          headers: {
+            ...authHeaders,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            password: edicaoUsuarioSenha,
+          }),
+        }
+      );
+
+      if (!senhaResponse.ok) {
+        const data = await senhaResponse.json();
+        console.log(data);
+        alert("Usuário salvo, mas houve erro ao trocar a senha");
+        return;
+      }
+    }
+
+    cancelarEdicaoUsuario();
+    await carregarAdmin();
+    alert("Usuário atualizado!");
+  }
+
+  async function excluirUsuario(usuarioSistema: UsuarioSistema) {
+    if (usuarioSistema.id === usuarioLogado?.id) {
+      alert("Você não pode excluir o usuário logado.");
+      return;
+    }
+
+    const confirmou = confirm(
+      `Excluir o usuário ${usuarioSistema.username}? Essa ação não pode ser desfeita.`
+    );
+
+    if (!confirmou) {
+      return;
+    }
+
+    const response = await fetch(
+      `${API_URL}/api/usuarios/${usuarioSistema.id}/`,
+      {
+        method: "DELETE",
+        headers: authHeaders,
+      }
+    );
+
+    if (!response.ok) {
+      alert("Erro ao excluir usuário");
+      return;
+    }
+
+    await carregarAdmin();
   }
 
   async function criarChamado() {
@@ -882,15 +990,107 @@ export default function Home() {
                         {usuarios.map((item) => (
                           <div
                             key={item.id}
-                            className="flex flex-col gap-2 rounded-md border border-zinc-800 bg-zinc-950 p-4 sm:flex-row sm:items-center sm:justify-between"
+                            className="rounded-md border border-zinc-800 bg-zinc-950 p-4"
                           >
-                            <div>
-                              <p className="font-semibold">{item.username}</p>
-                              <p className="text-sm text-zinc-500">
-                                {item.perfil} -{" "}
-                                {item.is_active ? "ativo" : "inativo"}
-                              </p>
-                            </div>
+                            {editandoUsuarioId === item.id ? (
+                              <div className="grid gap-4">
+                                <div className="grid gap-4 md:grid-cols-[1fr_220px_160px]">
+                                  <input
+                                    type="text"
+                                    value={edicaoUsuarioNome}
+                                    onChange={(event) =>
+                                      setEdicaoUsuarioNome(event.target.value)
+                                    }
+                                    className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                                  />
+
+                                  <select
+                                    value={edicaoUsuarioPerfil}
+                                    onChange={(event) =>
+                                      setEdicaoUsuarioPerfil(
+                                        event.target
+                                          .value as UsuarioSistema["perfil"]
+                                      )
+                                    }
+                                    className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                                  >
+                                    <option value="admin">Admin</option>
+                                    <option value="monitoramento">
+                                      Monitoramento
+                                    </option>
+                                    <option value="tecnico">Técnico</option>
+                                  </select>
+
+                                  <label className="flex items-center gap-3 rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white">
+                                    <input
+                                      type="checkbox"
+                                      checked={edicaoUsuarioAtivo}
+                                      onChange={(event) =>
+                                        setEdicaoUsuarioAtivo(
+                                          event.target.checked
+                                        )
+                                      }
+                                      className="h-5 w-5"
+                                    />
+                                    <span>Ativo</span>
+                                  </label>
+                                </div>
+
+                                <input
+                                  type="password"
+                                  placeholder="Nova senha, deixe em branco para manter"
+                                  value={edicaoUsuarioSenha}
+                                  onChange={(event) =>
+                                    setEdicaoUsuarioSenha(event.target.value)
+                                  }
+                                  className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                                />
+
+                                <div className="flex flex-wrap gap-3">
+                                  <button
+                                    onClick={() => salvarUsuario(item.id)}
+                                    className="rounded-md bg-white px-5 py-3 font-semibold text-black transition hover:bg-zinc-200"
+                                  >
+                                    Salvar
+                                  </button>
+
+                                  <button
+                                    onClick={cancelarEdicaoUsuario}
+                                    className="rounded-md border border-zinc-700 px-5 py-3 font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                                  >
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                  <p className="font-semibold">
+                                    {item.username}
+                                  </p>
+                                  <p className="text-sm text-zinc-500">
+                                    {item.perfil} -{" "}
+                                    {item.is_active ? "ativo" : "inativo"}
+                                  </p>
+                                </div>
+
+                                <div className="flex flex-wrap gap-3">
+                                  <button
+                                    onClick={() => iniciarEdicaoUsuario(item)}
+                                    className="rounded-md border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                                  >
+                                    Editar
+                                  </button>
+
+                                  <button
+                                    onClick={() => excluirUsuario(item)}
+                                    className="rounded-md border border-red-500/50 px-4 py-2 text-sm font-medium text-red-200 transition hover:border-red-300 hover:text-red-100"
+                                  >
+                                    Excluir
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
