@@ -10,6 +10,7 @@ const API_URL =
 const DIAS_NO_HISTORICO = 30;
 
 type Aba = "chamados" | "historico" | "condominios" | "admin";
+type AbaAdmin = "usuarios" | "logs";
 
 type Condominio = {
   id: number;
@@ -111,6 +112,7 @@ export default function Home() {
   const [erroLogin, setErroLogin] = useState("");
 
   const [aba, setAba] = useState<Aba>("chamados");
+  const [abaAdmin, setAbaAdmin] = useState<AbaAdmin>("usuarios");
   const [chamados, setChamados] = useState<Chamado[]>([]);
   const [condominios, setCondominios] = useState<Condominio[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioSistema[]>([]);
@@ -675,7 +677,7 @@ export default function Home() {
                     : "bg-zinc-900 text-white hover:bg-zinc-800"
                 }`}
               >
-                Admin
+                Administração
               </button>
             )}
           </div>
@@ -786,113 +788,159 @@ export default function Home() {
 
             {aba === "admin" && usuarioLogado?.perfil === "admin" && (
               <div className="grid gap-8">
-                <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
+                <div>
                   <h2 className="mb-5 text-2xl font-semibold">
-                    Criar usuário
+                    Administração
                   </h2>
 
-                  <div className="grid gap-4 md:grid-cols-[1fr_1fr_220px_auto]">
-                    <input
-                      type="text"
-                      placeholder="Usuário"
-                      value={novoUsuario}
-                      onChange={(event) => setNovoUsuario(event.target.value)}
-                      className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
-                    />
-
-                    <input
-                      type="password"
-                      placeholder="Senha"
-                      value={novaSenha}
-                      onChange={(event) => setNovaSenha(event.target.value)}
-                      className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
-                    />
-
-                    <select
-                      value={novoPerfil}
-                      onChange={(event) =>
-                        setNovoPerfil(
-                          event.target.value as UsuarioSistema["perfil"]
-                        )
-                      }
-                      className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <button
+                      onClick={() => {
+                        setAbaAdmin("usuarios");
+                        carregarAdmin();
+                      }}
+                      className={`rounded-md p-3 text-left font-semibold transition ${
+                        abaAdmin === "usuarios"
+                          ? "bg-white text-black"
+                          : "bg-zinc-900 text-white hover:bg-zinc-800"
+                      }`}
                     >
-                      <option value="admin">Admin</option>
-                      <option value="monitoramento">Monitoramento</option>
-                      <option value="tecnico">Técnico</option>
-                    </select>
+                      Usuários
+                    </button>
 
                     <button
-                      onClick={cadastrarUsuario}
-                      className="rounded-md bg-white px-5 py-3 font-semibold text-black transition hover:bg-zinc-200"
+                      onClick={() => {
+                        setAbaAdmin("logs");
+                        carregarAdmin();
+                      }}
+                      className={`rounded-md p-3 text-left font-semibold transition ${
+                        abaAdmin === "logs"
+                          ? "bg-white text-black"
+                          : "bg-zinc-900 text-white hover:bg-zinc-800"
+                      }`}
                     >
-                      Criar
+                      Logs de acesso
                     </button>
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-xl">
-                  <h2 className="mb-5 text-2xl font-semibold">Usuários</h2>
+                {abaAdmin === "usuarios" && (
+                  <>
+                    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
+                      <h2 className="mb-5 text-2xl font-semibold">
+                        Criar usuário
+                      </h2>
 
-                  <div className="grid gap-3">
-                    {usuarios.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex flex-col gap-2 rounded-md border border-zinc-800 bg-zinc-950 p-4 sm:flex-row sm:items-center sm:justify-between"
+                      <div className="grid gap-4 md:grid-cols-[1fr_1fr_220px_auto]">
+                        <input
+                          type="text"
+                          placeholder="Usuário"
+                          value={novoUsuario}
+                          onChange={(event) =>
+                            setNovoUsuario(event.target.value)
+                          }
+                          className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                        />
+
+                        <input
+                          type="password"
+                          placeholder="Senha"
+                          value={novaSenha}
+                          onChange={(event) => setNovaSenha(event.target.value)}
+                          className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                        />
+
+                        <select
+                          value={novoPerfil}
+                          onChange={(event) =>
+                            setNovoPerfil(
+                              event.target.value as UsuarioSistema["perfil"]
+                            )
+                          }
+                          className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                        >
+                          <option value="admin">Admin</option>
+                          <option value="monitoramento">Monitoramento</option>
+                          <option value="tecnico">Técnico</option>
+                        </select>
+
+                        <button
+                          onClick={cadastrarUsuario}
+                          className="rounded-md bg-white px-5 py-3 font-semibold text-black transition hover:bg-zinc-200"
+                        >
+                          Criar
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-xl">
+                      <h2 className="mb-5 text-2xl font-semibold">
+                        Usuários
+                      </h2>
+
+                      <div className="grid gap-3">
+                        {usuarios.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex flex-col gap-2 rounded-md border border-zinc-800 bg-zinc-950 p-4 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div>
+                              <p className="font-semibold">{item.username}</p>
+                              <p className="text-sm text-zinc-500">
+                                {item.perfil} -{" "}
+                                {item.is_active ? "ativo" : "inativo"}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {abaAdmin === "logs" && (
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-xl">
+                    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <h2 className="text-2xl font-semibold">
+                        Logs de acesso
+                      </h2>
+
+                      <button
+                        onClick={carregarAdmin}
+                        className="rounded-md border border-zinc-700 px-4 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
                       >
-                        <div>
-                          <p className="font-semibold">{item.username}</p>
-                          <p className="text-sm text-zinc-500">
-                            {item.perfil} -{" "}
-                            {item.is_active ? "ativo" : "inativo"}
+                        Atualizar
+                      </button>
+                    </div>
+
+                    <div className="grid gap-3">
+                      {accessLogs.map((item) => (
+                        <div
+                          key={item.id}
+                          className="rounded-md border border-zinc-800 bg-zinc-950 p-4"
+                        >
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="font-semibold">{item.username}</p>
+                            <span
+                              className={`rounded-full px-3 py-1 text-sm font-medium ${
+                                item.sucesso
+                                  ? "bg-green-500/20 text-green-300"
+                                  : "bg-red-500/20 text-red-300"
+                              }`}
+                            >
+                              {item.sucesso ? "sucesso" : "falha"}
+                            </span>
+                          </div>
+
+                          <p className="mt-2 text-sm text-zinc-500">
+                            {formatarData(item.criado_em)} - IP:{" "}
+                            {item.ip || "não identificado"} - {item.perfil}
                           </p>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-
-                <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-xl">
-                  <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 className="text-2xl font-semibold">
-                      Logs de acesso
-                    </h2>
-
-                    <button
-                      onClick={carregarAdmin}
-                      className="rounded-md border border-zinc-700 px-4 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-                    >
-                      Atualizar
-                    </button>
-                  </div>
-
-                  <div className="grid gap-3">
-                    {accessLogs.map((item) => (
-                      <div
-                        key={item.id}
-                        className="rounded-md border border-zinc-800 bg-zinc-950 p-4"
-                      >
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                          <p className="font-semibold">{item.username}</p>
-                          <span
-                            className={`rounded-full px-3 py-1 text-sm font-medium ${
-                              item.sucesso
-                                ? "bg-green-500/20 text-green-300"
-                                : "bg-red-500/20 text-red-300"
-                            }`}
-                          >
-                            {item.sucesso ? "sucesso" : "falha"}
-                          </span>
-                        </div>
-
-                        <p className="mt-2 text-sm text-zinc-500">
-                          {formatarData(item.criado_em)} - IP:{" "}
-                          {item.ip || "não identificado"} - {item.perfil}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                )}
               </div>
             )}
 
