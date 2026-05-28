@@ -6,7 +6,11 @@ SECRET_KEY = 'django-insecure-dev-key'
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    "delta-chamados.onrender.com",
+]
 
 
 INSTALLED_APPS = [
