@@ -90,66 +90,64 @@ class MelhorarTextoView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        api_key = os.environ.get('DEEPSEEK_API_KEY')
+        api_key = os.environ.get('GEMINI_API_KEY')
 
         if not api_key:
             return Response(
                 {
                     'detail': (
-                        'DeepSeek nao configurado. Defina DEEPSEEK_API_KEY '
+                        'Gemini nao configurado. Defina GEMINI_API_KEY '
                         'nas variaveis do backend.'
                     ),
                 },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
-        modelo = os.environ.get('DEEPSEEK_MODEL', 'deepseek-chat')
-        prompt_sistema = (
+        modelo = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash-lite')
+        prompt = (
             'Voce revisa textos curtos para um sistema de chamados de '
             'condominios. Reescreva em portugues do Brasil, com tom tecnico, '
             'claro e objetivo. Corrija ortografia e concordancia. Nao invente '
             'informacoes, nao adicione valores, datas, nomes ou detalhes que '
             'nao estejam no texto original. Responda somente com o texto '
-            'revisado, sem aspas e sem explicacoes.'
+            'revisado, sem aspas e sem explicacoes. '
+            f'Contexto: {contexto}. Texto: {texto}'
         )
-        prompt_usuario = f'Contexto: {contexto}\nTexto: {texto}'
 
         try:
             resposta = requests.post(
-                'https://api.deepseek.com/chat/completions',
-                headers={
-                    'Authorization': f'Bearer {api_key}',
-                    'Content-Type': 'application/json',
-                },
+                (
+                    'https://generativelanguage.googleapis.com/v1beta/models/'
+                    f'{modelo}:generateContent'
+                ),
+                params={'key': api_key},
                 json={
-                    'model': modelo,
-                    'messages': [
+                    'contents': [
                         {
-                            'role': 'system',
-                            'content': prompt_sistema,
-                        },
-                        {
-                            'role': 'user',
-                            'content': prompt_usuario,
+                            'parts': [
+                                {'text': prompt}
+                            ]
                         },
                     ],
-                    'temperature': 0.2,
-                    'max_tokens': 160,
-                    'stream': False,
+                    'generationConfig': {
+                        'temperature': 0.2,
+                        'maxOutputTokens': 160,
+                    },
                 },
                 timeout=12,
             )
             resposta.raise_for_status()
             data = resposta.json()
             texto_melhorado = (
-                data.get('choices', [{}])[0]
-                .get('message', {})
-                .get('content', '')
+                data.get('candidates', [{}])[0]
+                .get('content', {})
+                .get('parts', [{}])[0]
+                .get('text', '')
                 .strip()
             )
 
             if not texto_melhorado:
-                raise ValueError('Resposta vazia do DeepSeek.')
+                raise ValueError('Resposta vazia do Gemini.')
 
             registrar_acao(
                 request,
@@ -159,7 +157,7 @@ class MelhorarTextoView(APIView):
 
             return Response({
                 'texto': texto_melhorado,
-                'origem': 'deepseek',
+                'origem': 'gemini',
             })
         except requests.RequestException as erro:
             status_code = getattr(erro.response, 'status_code', None)
@@ -171,7 +169,7 @@ class MelhorarTextoView(APIView):
             return Response(
                 {
                     'detail': (
-                        'DeepSeek falhou. Verifique chave, creditos e modelo.'
+                        'Gemini falhou. Verifique chave, quota e modelo.'
                     ),
                     'status_code': status_code,
                     'erro': detalhe,
@@ -181,7 +179,7 @@ class MelhorarTextoView(APIView):
         except Exception as erro:
             return Response(
                 {
-                    'detail': 'DeepSeek retornou uma resposta invalida.',
+                    'detail': 'Gemini retornou uma resposta invalida.',
                     'erro': str(erro),
                 },
                 status=status.HTTP_502_BAD_GATEWAY,
