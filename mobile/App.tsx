@@ -61,6 +61,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [erro, setErro] = useState("");
+  const [pushStatus, setPushStatus] = useState("Push ainda não registrado");
 
   const headers = useMemo(
     () => ({
@@ -88,6 +89,7 @@ export default function App() {
 
 async function registrarPush(tokenAtual: string) {
     if (!Device.isDevice) {
+      setPushStatus("Push disponível apenas em aparelho físico");
       return;
     }
 
@@ -109,17 +111,20 @@ async function registrarPush(tokenAtual: string) {
     }
 
     if (status !== "granted") {
+      setPushStatus("Permissão de notificação negada");
       return;
     }
 
     const projectId =
       Constants.easConfig?.projectId ??
       Constants.expoConfig?.extra?.eas?.projectId;
+    setPushStatus("Gerando token push...");
     const expoToken = await Notifications.getExpoPushTokenAsync(
       projectId ? { projectId } : undefined
     );
 
-    await fetch(`${API_URL}/api/push-devices/`, {
+    setPushStatus("Registrando aparelho...");
+    const response = await fetch(`${API_URL}/api/push-devices/`, {
       method: "POST",
       headers: {
         Authorization: `Token ${tokenAtual}`,
@@ -130,6 +135,13 @@ async function registrarPush(tokenAtual: string) {
         plataforma: "android",
       }),
     });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Erro ao registrar push: ${response.status} ${text}`);
+    }
+
+    setPushStatus("Push registrado");
   }
 
   async function entrar() {
@@ -163,7 +175,15 @@ async function registrarPush(tokenAtual: string) {
       setToken(data.token);
       setUsuario(data.user);
       setPassword("");
-      await registrarPush(data.token);
+      try {
+        await registrarPush(data.token);
+      } catch (error) {
+        setPushStatus(
+          error instanceof Error
+            ? error.message
+            : "Erro ao registrar push"
+        );
+      }
     } catch (error) {
       setErro(
         `Não foi possível entrar. API: ${API_URL}. ${
@@ -295,6 +315,7 @@ async function registrarPush(tokenAtual: string) {
           <Text style={styles.subtitle}>
             {usuario?.nome} - {usuario?.perfil}
           </Text>
+          <Text style={styles.pushStatus}>{pushStatus}</Text>
         </View>
 
         <TouchableOpacity style={styles.secondaryButton} onPress={sair}>
@@ -378,6 +399,11 @@ const styles = StyleSheet.create({
   subtitle: {
     color: "#a1a1aa",
     fontSize: 14,
+  },
+  pushStatus: {
+    color: "#60a5fa",
+    fontSize: 12,
+    marginTop: 4,
   },
   input: {
     backgroundColor: "#09090b",

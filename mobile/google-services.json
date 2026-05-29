@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "750005651144",
+    "project_id": "delta-chamados",
+    "storage_bucket": "delta-chamados.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:750005651144:android:d427c9761d33dc989687fd",
+        "android_client_info": {
+          "package_name": "com.deltacondominios.chamados"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjGY7X7svqRBEsUD6nu3ciUB28MDLiM_c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
