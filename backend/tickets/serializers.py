@@ -18,10 +18,20 @@ class ChamadoSerializer(serializers.ModelSerializer):
         source="condominio.nome",
         read_only=True
     )
+    criado_por_nome = serializers.SerializerMethodField()
 
     class Meta:
         model = Chamado
         fields = "__all__"
+        read_only_fields = [
+            "criado_por",
+        ]
+
+    def get_criado_por_nome(self, obj):
+        if not obj.criado_por:
+            return ""
+
+        return obj.criado_por.get_full_name() or obj.criado_por.username
 
 
 class UserSerializer(serializers.ModelSerializer):

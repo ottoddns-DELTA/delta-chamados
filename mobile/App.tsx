@@ -44,6 +44,7 @@ type Chamado = {
   titulo: string;
   descricao: string;
   condominio_nome?: string;
+  criado_por_nome?: string;
   condominio: number;
   urgente: boolean;
   status: "aberto" | "andamento" | "resolvido";
@@ -364,6 +365,9 @@ async function registrarPush(tokenAtual: string) {
             <Text style={styles.condominio}>
               {item.condominio_nome || `Condomínio #${item.condominio}`}
             </Text>
+            <Text style={styles.openedBy}>
+              Aberto por: {item.criado_por_nome || "nao informado"}
+            </Text>
             <Text style={styles.description}>{item.descricao}</Text>
 
             {item.urgente ? <Text style={styles.urgent}>Urgente</Text> : null}
@@ -511,6 +515,11 @@ const styles = StyleSheet.create({
   condominio: {
     color: "#a1a1aa",
     marginTop: 8,
+  },
+  openedBy: {
+    color: "#71717a",
+    fontSize: 13,
+    marginTop: 4,
   },
   description: {
     color: "#e4e4e7",

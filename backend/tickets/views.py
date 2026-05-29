@@ -92,7 +92,7 @@ class ChamadoViewSet(viewsets.ModelViewSet):
     permission_classes = [PerfilChamadoPermission]
 
     def perform_create(self, serializer):
-        chamado = serializer.save()
+        chamado = serializer.save(criado_por=self.request.user)
         registrar_acao(
             self.request,
             'criou_chamado',

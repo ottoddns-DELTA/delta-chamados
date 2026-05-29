@@ -24,6 +24,7 @@ type Chamado = {
   descricao: string;
   condominio: number;
   condominio_nome?: string;
+  criado_por_nome?: string;
   urgente: boolean;
   imagem?: string | null;
   status: "aberto" | "andamento" | "resolvido";
@@ -110,6 +111,7 @@ export default function Home() {
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [erroLogin, setErroLogin] = useState("");
+  const [mensagemPopup, setMensagemPopup] = useState("");
 
   const [aba, setAba] = useState<Aba>("chamados");
   const [abaAdmin, setAbaAdmin] = useState<AbaAdmin>("usuarios");
@@ -523,6 +525,7 @@ export default function Home() {
     setImagem(null);
 
     await carregarChamados();
+    setMensagemPopup("Chamado aberto com sucesso");
   }
 
   async function resolverChamado(id: number) {
@@ -687,6 +690,18 @@ export default function Home() {
   }, [edicaoImagemPreview]);
 
   useEffect(() => {
+    if (!mensagemPopup) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setMensagemPopup("");
+    }, 3500);
+
+    return () => window.clearTimeout(timeout);
+  }, [mensagemPopup]);
+
+  useEffect(() => {
     if (!logado || !token) {
       return;
     }
@@ -839,6 +854,12 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-white">
+      {mensagemPopup && (
+        <div className="fixed left-1/2 top-5 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-lg border border-green-500/40 bg-green-950/95 px-5 py-4 text-center font-semibold text-green-100 shadow-2xl shadow-black/40">
+          {mensagemPopup}
+        </div>
+      )}
+
       <div className="flex min-h-screen flex-col lg:flex-row">
         <aside className="border-b border-zinc-800 bg-black p-5 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r lg:p-4">
           <div className="mb-8 flex items-center justify-between gap-4 px-2 pt-2">
@@ -1480,6 +1501,7 @@ export default function Home() {
                     .map((chamado) => (
                       <div
                         key={chamado.id}
+                        title={`Aberto por: ${chamado.criado_por_nome || "nao informado"}`}
                         className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-xl"
                       >
                         {editandoChamadoId === chamado.id ? (
@@ -1713,6 +1735,11 @@ export default function Home() {
                             <p>
                               Condomínio:{" "}
                               {chamado.condominio_nome || chamado.condominio}
+                            </p>
+
+                            <p>
+                              Aberto por:{" "}
+                              {chamado.criado_por_nome || "nao informado"}
                             </p>
 
                             {chamado.status === "resolvido" &&
