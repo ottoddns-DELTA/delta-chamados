@@ -1742,6 +1742,10 @@ export default function Home() {
                               {chamado.criado_por_nome || "nao informado"}
                             </p>
 
+                            <p>
+                              Aberto em: {formatarData(chamado.criado_em)}
+                            </p>
+
                             {chamado.status === "resolvido" &&
                               chamado.resolvido_em && (
                                 <p>

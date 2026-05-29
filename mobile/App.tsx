@@ -51,6 +51,8 @@ type Chamado = {
   imagem?: string | null;
   urgente: boolean;
   status: "aberto" | "andamento" | "resolvido";
+  criado_em?: string;
+  resolvido_em?: string | null;
 };
 
 type LoginResponse = {
@@ -72,6 +74,21 @@ function montarUrlImagem(imagem?: string | null) {
   }
 
   return `${API_URL}${imagem}`;
+}
+
+function formatarData(data?: string | null) {
+  if (!data) {
+    return "nao informado";
+  }
+
+  const valor = new Date(data);
+  const doisDigitos = (numero: number) => String(numero).padStart(2, "0");
+
+  return `${doisDigitos(valor.getDate())}/${doisDigitos(
+    valor.getMonth() + 1
+  )}/${valor.getFullYear()} ${doisDigitos(valor.getHours())}:${doisDigitos(
+    valor.getMinutes()
+  )}`;
 }
 
 export default function App() {
@@ -453,6 +470,14 @@ export default function App() {
             <Text style={styles.openedBy}>
               Aberto por: {item.criado_por_nome || "nao informado"}
             </Text>
+            <Text style={styles.openedBy}>
+              Aberto em: {formatarData(item.criado_em)}
+            </Text>
+            {item.resolvido_em ? (
+              <Text style={styles.openedBy}>
+                Resolvido em: {formatarData(item.resolvido_em)}
+              </Text>
+            ) : null}
             <Text style={styles.description}>{item.descricao}</Text>
 
             {item.imagem ? (
