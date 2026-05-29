@@ -1490,12 +1490,26 @@ export default function Home() {
                         className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
                       />
 
-                      <textarea
+                      <div className="relative">
+                        <textarea
                         placeholder="Descrição"
                         value={descricao}
                         onChange={(event) => setDescricao(event.target.value)}
-                        className="min-h-28 rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                        spellCheck
+                        className="min-h-28 w-full rounded-md border border-zinc-800 bg-zinc-950 p-4 pr-16 text-white outline-none transition focus:border-blue-400"
                       />
+
+                        <button
+                          type="button"
+                          title="Corrigir e melhorar texto"
+                          onClick={() =>
+                            setDescricao(melhorarDescricaoTecnica(descricao))
+                          }
+                          className="absolute bottom-3 right-3 rounded-md border border-blue-500/60 bg-zinc-950 px-3 py-2 text-sm font-bold text-blue-200 transition hover:border-blue-300 hover:text-white"
+                        >
+                          Aa
+                        </button>
+                      </div>
 
                       <select
                         value={condominio}
