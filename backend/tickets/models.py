@@ -35,6 +35,8 @@ class Chamado(models.Model):
 
     descricao = models.TextField()
 
+    descricao_resolucao = models.TextField(blank=True)
+
     condominio = models.ForeignKey(
         Condominio,
         on_delete=models.CASCADE,

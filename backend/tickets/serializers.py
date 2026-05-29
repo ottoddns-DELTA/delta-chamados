@@ -33,6 +33,25 @@ class ChamadoSerializer(serializers.ModelSerializer):
 
         return obj.criado_por.get_full_name() or obj.criado_por.username
 
+    def validate(self, attrs):
+        status = attrs.get(
+            'status',
+            self.instance.status if self.instance else None
+        )
+        descricao_resolucao = attrs.get(
+            'descricao_resolucao',
+            self.instance.descricao_resolucao if self.instance else ''
+        )
+
+        if status == 'resolvido' and not descricao_resolucao.strip():
+            raise serializers.ValidationError({
+                'descricao_resolucao': (
+                    'Informe uma breve descricao do que foi feito.'
+                )
+            })
+
+        return attrs
+
 
 class UserSerializer(serializers.ModelSerializer):
 

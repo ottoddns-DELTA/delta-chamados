@@ -11,6 +11,7 @@ import {
   FlatList,
   Image,
   Linking,
+  Modal,
   Platform,
   RefreshControl,
   SafeAreaView,
@@ -46,6 +47,7 @@ type Chamado = {
   id: number;
   titulo: string;
   descricao: string;
+  descricao_resolucao?: string;
   condominio_nome?: string;
   criado_por_nome?: string;
   condominio: number;
@@ -94,6 +96,32 @@ function formatarData(data?: string | null) {
   )}`;
 }
 
+function melhorarDescricaoTecnica(texto: string) {
+  const textoLimpo = texto.replace(/\s+/g, " ").trim();
+
+  if (!textoLimpo) {
+    return "";
+  }
+
+  let textoMelhorado = textoLimpo
+    .replace(/\bfoi trocado a\b/gi, "Foi realizada a troca da")
+    .replace(/\bfoi trocada a\b/gi, "Foi realizada a troca da")
+    .replace(/\bfoi trocado o\b/gi, "Foi realizada a troca do")
+    .replace(/\bfizemos\b/gi, "realizamos")
+    .replace(/\barrumamos\b/gi, "realizamos o reparo em")
+    .replace(/\bconsertamos\b/gi, "realizamos o reparo em")
+    .replace(/\blampada\b/gi, "lampada");
+
+  textoMelhorado =
+    textoMelhorado.charAt(0).toUpperCase() + textoMelhorado.slice(1);
+
+  if (!/[.!?]$/.test(textoMelhorado)) {
+    textoMelhorado += ".";
+  }
+
+  return textoMelhorado;
+}
+
 export default function App() {
   const [token, setToken] = useState("");
   const [usuario, setUsuario] = useState<Usuario | null>(null);
@@ -106,6 +134,9 @@ export default function App() {
   const [pushEstado, setPushEstado] = useState<PushEstado>("verificando");
   const [pushDetalhe, setPushDetalhe] = useState("");
   const [imagensComErro, setImagensComErro] = useState<number[]>([]);
+  const [chamadoParaResolver, setChamadoParaResolver] =
+    useState<Chamado | null>(null);
+  const [descricaoResolucao, setDescricaoResolucao] = useState("");
   const pushRegistroIniciado = useRef(false);
 
   const headers = useMemo(
@@ -292,6 +323,49 @@ export default function App() {
     }
   }
 
+  function abrirResolucao(chamado: Chamado) {
+    setChamadoParaResolver(chamado);
+    setDescricaoResolucao(chamado.descricao_resolucao || "");
+  }
+
+  function cancelarResolucao() {
+    setChamadoParaResolver(null);
+    setDescricaoResolucao("");
+  }
+
+  async function resolverChamado() {
+    if (!chamadoParaResolver || !descricaoResolucao.trim()) {
+      Alert.alert("Descricao obrigatoria", "Informe o que foi feito.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/chamados/${chamadoParaResolver.id}/`,
+        {
+          method: "PATCH",
+          headers: {
+            ...headers,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: "resolvido",
+            descricao_resolucao: descricaoResolucao.trim(),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Erro ao resolver chamado");
+      }
+
+      cancelarResolucao();
+      await carregarChamados();
+    } catch {
+      Alert.alert("Erro", "Nao foi possivel resolver o chamado.");
+    }
+  }
+
   async function atualizar() {
     setRefreshing(true);
 
@@ -436,6 +510,58 @@ export default function App() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
+      <Modal
+        animationType="fade"
+        transparent
+        visible={!!chamadoParaResolver}
+        onRequestClose={cancelarResolucao}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Resolver chamado</Text>
+            <Text style={styles.modalSubtitle}>
+              Descreva brevemente o que foi feito.
+            </Text>
+
+            <TextInput
+              multiline
+              placeholder="Ex: Foi realizada a troca da lampada e testado o funcionamento."
+              placeholderTextColor="#71717a"
+              style={styles.resolutionInput}
+              value={descricaoResolucao}
+              onChangeText={setDescricaoResolucao}
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.aiButton]}
+                onPress={() =>
+                  setDescricaoResolucao(
+                    melhorarDescricaoTecnica(descricaoResolucao)
+                  )
+                }
+              >
+                <Text style={styles.actionButtonText}>Melhorar texto</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButton, styles.resolveButton]}
+                onPress={resolverChamado}
+              >
+                <Text style={styles.actionButtonText}>Resolver</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={cancelarResolucao}
+              >
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <View style={styles.header}>
         <View style={styles.headerInfo}>
           <View style={styles.headerBrand}>
@@ -553,7 +679,7 @@ export default function App() {
 
               <TouchableOpacity
                 style={[styles.actionButton, styles.resolveButton]}
-                onPress={() => alterarStatus(item.id, "resolvido")}
+                onPress={() => abrirResolucao(item)}
               >
                 <Text style={styles.actionButtonText}>Marcar como resolvido</Text>
               </TouchableOpacity>
@@ -772,8 +898,64 @@ const styles = StyleSheet.create({
   resolveButton: {
     backgroundColor: "#16a34a",
   },
+  aiButton: {
+    backgroundColor: "#2563eb",
+  },
   actionButtonText: {
     color: "#fff",
     fontWeight: "800",
+  },
+  cancelButton: {
+    borderColor: "#52525b",
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  cancelButtonText: {
+    color: "#e4e4e7",
+    fontWeight: "800",
+  },
+  modalOverlay: {
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.72)",
+    flex: 1,
+    justifyContent: "center",
+    padding: 18,
+  },
+  modalBox: {
+    backgroundColor: "#18181b",
+    borderColor: "#27272a",
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 18,
+    width: "100%",
+  },
+  modalTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  modalSubtitle: {
+    color: "#a1a1aa",
+    marginTop: 6,
+  },
+  resolutionInput: {
+    backgroundColor: "#09090b",
+    borderColor: "#27272a",
+    borderRadius: 8,
+    borderWidth: 1,
+    color: "#fff",
+    fontSize: 15,
+    minHeight: 130,
+    marginTop: 14,
+    padding: 14,
+    textAlignVertical: "top",
+  },
+  modalActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 14,
   },
 });

@@ -22,6 +22,7 @@ type Chamado = {
   id: number;
   titulo: string;
   descricao: string;
+  descricao_resolucao?: string;
   condominio: number;
   condominio_nome?: string;
   criado_por_nome?: string;
@@ -86,6 +87,32 @@ function formatarData(data?: string | null) {
   }).format(new Date(data));
 }
 
+function melhorarDescricaoTecnica(texto: string) {
+  const textoLimpo = texto.replace(/\s+/g, " ").trim();
+
+  if (!textoLimpo) {
+    return "";
+  }
+
+  let textoMelhorado = textoLimpo
+    .replace(/\bfoi trocado a\b/gi, "Foi realizada a troca da")
+    .replace(/\bfoi trocada a\b/gi, "Foi realizada a troca da")
+    .replace(/\bfoi trocado o\b/gi, "Foi realizada a troca do")
+    .replace(/\bfizemos\b/gi, "realizamos")
+    .replace(/\barrumamos\b/gi, "realizamos o reparo em")
+    .replace(/\bconsertamos\b/gi, "realizamos o reparo em")
+    .replace(/\blampada\b/gi, "lampada");
+
+  textoMelhorado =
+    textoMelhorado.charAt(0).toUpperCase() + textoMelhorado.slice(1);
+
+  if (!/[.!?]$/.test(textoMelhorado)) {
+    textoMelhorado += ".";
+  }
+
+  return textoMelhorado;
+}
+
 export default function Home() {
   const [logado, setLogado] = useState(
     () =>
@@ -135,6 +162,10 @@ export default function Home() {
   const [edicaoUrgente, setEdicaoUrgente] = useState(false);
   const [edicaoImagem, setEdicaoImagem] = useState<File | null>(null);
   const [edicaoRemoverImagem, setEdicaoRemoverImagem] = useState(false);
+  const [resolvendoChamadoId, setResolvendoChamadoId] = useState<number | null>(
+    null
+  );
+  const [descricaoResolucao, setDescricaoResolucao] = useState("");
 
   const [nomeCondominio, setNomeCondominio] = useState("");
   const [enderecoCondominio, setEnderecoCondominio] = useState("");
@@ -530,8 +561,23 @@ export default function Home() {
     setMensagemPopup("Chamado aberto com sucesso");
   }
 
-  async function resolverChamado(id: number) {
-    await fetch(`${API_URL}/api/chamados/${id}/`, {
+  function abrirResolucao(chamado: Chamado) {
+    setResolvendoChamadoId(chamado.id);
+    setDescricaoResolucao(chamado.descricao_resolucao || "");
+  }
+
+  function cancelarResolucao() {
+    setResolvendoChamadoId(null);
+    setDescricaoResolucao("");
+  }
+
+  async function resolverChamado() {
+    if (!resolvendoChamadoId || !descricaoResolucao.trim()) {
+      alert("Informe o que foi feito antes de resolver.");
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/api/chamados/${resolvendoChamadoId}/`, {
       method: "PATCH",
       headers: {
         ...authHeaders,
@@ -539,9 +585,16 @@ export default function Home() {
       },
       body: JSON.stringify({
         status: "resolvido",
+        descricao_resolucao: descricaoResolucao.trim(),
       }),
     });
 
+    if (!response.ok) {
+      alert("Erro ao resolver chamado.");
+      return;
+    }
+
+    cancelarResolucao();
     carregarChamados();
   }
 
@@ -859,6 +912,51 @@ export default function Home() {
       {mensagemPopup && (
         <div className="fixed left-1/2 top-5 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-lg border border-green-500/40 bg-green-950/95 px-5 py-4 text-center font-semibold text-green-100 shadow-2xl shadow-black/40">
           {mensagemPopup}
+        </div>
+      )}
+
+      {resolvendoChamadoId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-lg rounded-lg border border-zinc-800 bg-zinc-950 p-6 shadow-2xl">
+            <h2 className="mb-3 text-2xl font-semibold">Resolver chamado</h2>
+            <p className="mb-4 text-sm text-zinc-400">
+              Descreva brevemente o que foi feito no atendimento.
+            </p>
+
+            <textarea
+              value={descricaoResolucao}
+              onChange={(event) => setDescricaoResolucao(event.target.value)}
+              placeholder="Ex: Foi realizada a troca da lampada e testado o funcionamento."
+              className="min-h-32 w-full rounded-md border border-zinc-800 bg-black p-4 text-white outline-none transition focus:border-green-500"
+            />
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                onClick={() =>
+                  setDescricaoResolucao(
+                    melhorarDescricaoTecnica(descricaoResolucao)
+                  )
+                }
+                className="rounded-md border border-blue-500/60 px-5 py-3 font-medium text-blue-200 transition hover:border-blue-300 hover:text-white"
+              >
+                Melhorar texto
+              </button>
+
+              <button
+                onClick={resolverChamado}
+                className="rounded-md bg-green-600 px-5 py-3 font-semibold text-white transition hover:bg-green-700"
+              >
+                Marcar como resolvido
+              </button>
+
+              <button
+                onClick={cancelarResolucao}
+                className="rounded-md border border-zinc-700 px-5 py-3 font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1765,6 +1863,12 @@ export default function Home() {
                                 </p>
                               )}
 
+                            {chamado.descricao_resolucao && (
+                              <p className="mt-2 text-zinc-300">
+                                Feito: {chamado.descricao_resolucao}
+                              </p>
+                            )}
+
                             {chamado.urgente ? (
                               <p className="font-semibold text-red-400">
                                 Urgente
@@ -1796,7 +1900,7 @@ export default function Home() {
 
                             {chamado.status === "andamento" && (
                               <button
-                                onClick={() => resolverChamado(chamado.id)}
+                                onClick={() => abrirResolucao(chamado)}
                                 className="rounded-md bg-green-600 px-5 py-3 font-medium text-white transition hover:bg-green-700"
                               >
                                 Marcar como resolvido
