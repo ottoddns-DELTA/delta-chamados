@@ -90,7 +90,7 @@ class MelhorarTextoView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        api_key = os.environ.get('GEMINI_API_KEY')
+        api_key = os.environ.get('DEEPSEEK_API_KEY')
 
         if not api_key:
             return Response({
@@ -98,51 +98,53 @@ class MelhorarTextoView(APIView):
                 'origem': 'local',
             })
 
-        modelo = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash-lite')
-        url = (
-            'https://generativelanguage.googleapis.com/v1beta/models/'
-            f'{modelo}:generateContent'
+        modelo = os.environ.get('DEEPSEEK_MODEL', 'deepseek-chat')
+        prompt_sistema = (
+            'Voce revisa textos curtos para um sistema de chamados de '
+            'condominios. Reescreva em portugues do Brasil, com tom tecnico, '
+            'claro e objetivo. Corrija ortografia e concordancia. Nao invente '
+            'informacoes, nao adicione valores, datas, nomes ou detalhes que '
+            'nao estejam no texto original. Responda somente com o texto '
+            'revisado, sem aspas e sem explicacoes.'
         )
-        prompt = (
-            'Reescreva o texto abaixo em portugues do Brasil, com tom tecnico, '
-            'claro e objetivo para um sistema de chamados de condominios. '
-            'Corrija ortografia e concordancia. Nao invente informacoes, '
-            'nao adicione valores, datas, nomes ou detalhes que nao estejam no '
-            'texto original. Responda somente com o texto revisado, sem aspas. '
-            f'Contexto: {contexto}. Texto: {texto}'
-        )
+        prompt_usuario = f'Contexto: {contexto}\nTexto: {texto}'
 
         try:
             resposta = requests.post(
-                url,
-                params={'key': api_key},
+                'https://api.deepseek.com/chat/completions',
+                headers={
+                    'Authorization': f'Bearer {api_key}',
+                    'Content-Type': 'application/json',
+                },
                 json={
-                    'contents': [
+                    'model': modelo,
+                    'messages': [
                         {
-                            'parts': [
-                                {'text': prompt}
-                            ]
-                        }
+                            'role': 'system',
+                            'content': prompt_sistema,
+                        },
+                        {
+                            'role': 'user',
+                            'content': prompt_usuario,
+                        },
                     ],
-                    'generationConfig': {
-                        'temperature': 0.2,
-                        'maxOutputTokens': 160,
-                    },
+                    'temperature': 0.2,
+                    'max_tokens': 160,
+                    'stream': False,
                 },
                 timeout=12,
             )
             resposta.raise_for_status()
             data = resposta.json()
             texto_melhorado = (
-                data.get('candidates', [{}])[0]
-                .get('content', {})
-                .get('parts', [{}])[0]
-                .get('text', '')
+                data.get('choices', [{}])[0]
+                .get('message', {})
+                .get('content', '')
                 .strip()
             )
 
             if not texto_melhorado:
-                raise ValueError('Resposta vazia do Gemini.')
+                raise ValueError('Resposta vazia do DeepSeek.')
 
             registrar_acao(
                 request,
@@ -152,7 +154,7 @@ class MelhorarTextoView(APIView):
 
             return Response({
                 'texto': texto_melhorado,
-                'origem': 'gemini',
+                'origem': 'deepseek',
             })
         except Exception:
             return Response({
