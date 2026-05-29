@@ -188,6 +188,8 @@ export default function Home() {
     usuarioLogado?.perfil === "admin" ||
     usuarioLogado?.perfil === "monitoramento";
 
+  const podeExcluirCondominios = usuarioLogado?.perfil === "admin";
+
   const imagemPreview = useMemo(
     () => (imagem ? URL.createObjectURL(imagem) : ""),
     [imagem]
@@ -1104,12 +1106,14 @@ export default function Home() {
                                   Editar
                                 </button>
 
-                                <button
-                                  onClick={() => excluirCondominio(item.id)}
-                                  className="rounded-md border border-red-900 px-5 py-3 font-medium text-red-300 transition hover:border-red-500 hover:text-red-100"
-                                >
-                                  Excluir
-                                </button>
+                                {podeExcluirCondominios && (
+                                  <button
+                                    onClick={() => excluirCondominio(item.id)}
+                                    className="rounded-md border border-red-900 px-5 py-3 font-medium text-red-300 transition hover:border-red-500 hover:text-red-100"
+                                  >
+                                    Excluir
+                                  </button>
+                                )}
                               </div>
                             )}
                           </div>

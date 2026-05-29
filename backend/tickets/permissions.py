@@ -28,6 +28,9 @@ class PerfilCondominioPermission(BasePermission):
         if request.method == 'GET':
             return perfil in [ADMIN, MONITORAMENTO, TECNICO]
 
+        if request.method == 'DELETE':
+            return perfil == ADMIN
+
         return perfil in [ADMIN, MONITORAMENTO]
 
 
