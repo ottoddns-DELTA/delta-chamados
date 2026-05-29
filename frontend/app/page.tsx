@@ -139,6 +139,7 @@ export default function Home() {
   const [senha, setSenha] = useState("");
   const [erroLogin, setErroLogin] = useState("");
   const [mensagemPopup, setMensagemPopup] = useState("");
+  const [melhorandoTexto, setMelhorandoTexto] = useState(false);
 
   const [aba, setAba] = useState<Aba>("chamados");
   const [abaAdmin, setAbaAdmin] = useState<AbaAdmin>("usuarios");
@@ -237,6 +238,41 @@ export default function Home() {
     }),
     [token]
   );
+
+  async function melhorarTexto(texto: string, contexto: string) {
+    const textoLimpo = texto.trim();
+
+    if (!textoLimpo) {
+      return "";
+    }
+
+    setMelhorandoTexto(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/melhorar-texto/`, {
+        method: "POST",
+        headers: {
+          ...authHeaders,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          texto: textoLimpo,
+          contexto,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao melhorar texto");
+      }
+
+      const data = await response.json();
+      return data.texto || melhorarDescricaoTecnica(textoLimpo);
+    } catch {
+      return melhorarDescricaoTecnica(textoLimpo);
+    } finally {
+      setMelhorandoTexto(false);
+    }
+  }
 
   async function carregarChamados() {
     const response = await fetch(`${API_URL}/api/chamados/`, {
@@ -932,14 +968,15 @@ export default function Home() {
 
             <div className="mt-4 flex flex-wrap gap-3">
               <button
-                onClick={() =>
+                disabled={melhorandoTexto}
+                onClick={async () =>
                   setDescricaoResolucao(
-                    melhorarDescricaoTecnica(descricaoResolucao)
+                    await melhorarTexto(descricaoResolucao, "resolucao")
                   )
                 }
                 className="rounded-md border border-blue-500/60 px-5 py-3 font-medium text-blue-200 transition hover:border-blue-300 hover:text-white"
               >
-                Melhorar texto
+                {melhorandoTexto ? "..." : "Melhorar texto"}
               </button>
 
               <button
@@ -1502,12 +1539,15 @@ export default function Home() {
                         <button
                           type="button"
                           title="Corrigir e melhorar texto"
-                          onClick={() =>
-                            setDescricao(melhorarDescricaoTecnica(descricao))
+                          disabled={melhorandoTexto}
+                          onClick={async () =>
+                            setDescricao(
+                              await melhorarTexto(descricao, "novo chamado")
+                            )
                           }
                           className="absolute bottom-3 right-3 rounded-md border border-blue-500/60 bg-zinc-950 px-3 py-2 text-sm font-bold text-blue-200 transition hover:border-blue-300 hover:text-white"
                         >
-                          Aa
+                          {melhorandoTexto ? "..." : "Aa"}
                         </button>
                       </div>
 

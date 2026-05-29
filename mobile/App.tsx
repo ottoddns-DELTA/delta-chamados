@@ -137,6 +137,7 @@ export default function App() {
   const [chamadoParaResolver, setChamadoParaResolver] =
     useState<Chamado | null>(null);
   const [descricaoResolucao, setDescricaoResolucao] = useState("");
+  const [melhorandoTexto, setMelhorandoTexto] = useState(false);
   const pushRegistroIniciado = useRef(false);
 
   const headers = useMemo(
@@ -320,6 +321,41 @@ export default function App() {
       await carregarChamados();
     } catch {
       Alert.alert("Erro", "Não foi possível atualizar o chamado.");
+    }
+  }
+
+  async function melhorarTexto(texto: string, contexto: string) {
+    const textoLimpo = texto.trim();
+
+    if (!textoLimpo) {
+      return "";
+    }
+
+    setMelhorandoTexto(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/melhorar-texto/`, {
+        method: "POST",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          texto: textoLimpo,
+          contexto,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao melhorar texto");
+      }
+
+      const data = (await response.json()) as { texto?: string };
+      return data.texto || melhorarDescricaoTecnica(textoLimpo);
+    } catch {
+      return melhorarDescricaoTecnica(textoLimpo);
+    } finally {
+      setMelhorandoTexto(false);
     }
   }
 
@@ -535,13 +571,16 @@ export default function App() {
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={[styles.actionButton, styles.aiButton]}
-                onPress={() =>
+                disabled={melhorandoTexto}
+                onPress={async () =>
                   setDescricaoResolucao(
-                    melhorarDescricaoTecnica(descricaoResolucao)
+                    await melhorarTexto(descricaoResolucao, "resolucao")
                   )
                 }
               >
-                <Text style={styles.actionButtonText}>Melhorar texto</Text>
+                <Text style={styles.actionButtonText}>
+                  {melhorandoTexto ? "..." : "Melhorar texto"}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity

@@ -7,6 +7,7 @@ from .views import (
     ChamadoViewSet,
     CondominioViewSet,
     LoginView,
+    MelhorarTextoView,
     PushDeviceViewSet,
     UserViewSet,
 )
@@ -22,5 +23,6 @@ router.register(r'push-devices', PushDeviceViewSet, basename='push-devices')
 
 urlpatterns = [
     path('login/', LoginView.as_view()),
+    path('melhorar-texto/', MelhorarTextoView.as_view()),
     path('', include(router.urls)),
 ]

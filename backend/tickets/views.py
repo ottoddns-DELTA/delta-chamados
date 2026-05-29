@@ -1,5 +1,8 @@
+import os
+
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import Group, User
+import requests
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
@@ -34,6 +37,128 @@ def registrar_acao(request, acao, detalhe=''):
         detalhe=detalhe,
         ip=get_client_ip(request),
     )
+
+
+def melhorar_texto_local(texto):
+    texto_limpo = ' '.join(texto.split())
+
+    if not texto_limpo:
+        return ''
+
+    substituicoes = [
+        ('foi trocado a ', 'Foi realizada a troca da '),
+        ('foi trocada a ', 'Foi realizada a troca da '),
+        ('foi trocado o ', 'Foi realizada a troca do '),
+        ('fizemos ', 'realizamos '),
+        ('arrumamos ', 'realizamos o reparo em '),
+        ('consertamos ', 'realizamos o reparo em '),
+    ]
+
+    texto_melhorado = texto_limpo
+    texto_minusculo = texto_melhorado.lower()
+
+    for origem, destino in substituicoes:
+        if origem in texto_minusculo:
+            indice = texto_minusculo.index(origem)
+            texto_melhorado = (
+                texto_melhorado[:indice]
+                + destino
+                + texto_melhorado[indice + len(origem):]
+            )
+            texto_minusculo = texto_melhorado.lower()
+
+    texto_melhorado = (
+        texto_melhorado[:1].upper()
+        + texto_melhorado[1:]
+    )
+
+    if texto_melhorado[-1] not in '.!?':
+        texto_melhorado += '.'
+
+    return texto_melhorado
+
+
+class MelhorarTextoView(APIView):
+
+    def post(self, request):
+        texto = request.data.get('texto', '').strip()
+        contexto = request.data.get('contexto', 'chamado')
+
+        if not texto:
+            return Response(
+                {'detail': 'Informe o texto para melhorar.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        api_key = os.environ.get('GEMINI_API_KEY')
+
+        if not api_key:
+            return Response({
+                'texto': melhorar_texto_local(texto),
+                'origem': 'local',
+            })
+
+        modelo = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash-lite')
+        url = (
+            'https://generativelanguage.googleapis.com/v1beta/models/'
+            f'{modelo}:generateContent'
+        )
+        prompt = (
+            'Reescreva o texto abaixo em portugues do Brasil, com tom tecnico, '
+            'claro e objetivo para um sistema de chamados de condominios. '
+            'Corrija ortografia e concordancia. Nao invente informacoes, '
+            'nao adicione valores, datas, nomes ou detalhes que nao estejam no '
+            'texto original. Responda somente com o texto revisado, sem aspas. '
+            f'Contexto: {contexto}. Texto: {texto}'
+        )
+
+        try:
+            resposta = requests.post(
+                url,
+                params={'key': api_key},
+                json={
+                    'contents': [
+                        {
+                            'parts': [
+                                {'text': prompt}
+                            ]
+                        }
+                    ],
+                    'generationConfig': {
+                        'temperature': 0.2,
+                        'maxOutputTokens': 160,
+                    },
+                },
+                timeout=12,
+            )
+            resposta.raise_for_status()
+            data = resposta.json()
+            texto_melhorado = (
+                data.get('candidates', [{}])[0]
+                .get('content', {})
+                .get('parts', [{}])[0]
+                .get('text', '')
+                .strip()
+            )
+
+            if not texto_melhorado:
+                raise ValueError('Resposta vazia do Gemini.')
+
+            registrar_acao(
+                request,
+                'melhorou_texto',
+                f'Contexto: {contexto}',
+            )
+
+            return Response({
+                'texto': texto_melhorado,
+                'origem': 'gemini',
+            })
+        except Exception:
+            return Response({
+                'texto': melhorar_texto_local(texto),
+                'origem': 'local',
+            })
 
 
 class LoginView(APIView):
