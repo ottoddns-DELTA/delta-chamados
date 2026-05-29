@@ -10,6 +10,7 @@ import {
   AppState,
   FlatList,
   Image,
+  Linking,
   Platform,
   RefreshControl,
   SafeAreaView,
@@ -69,11 +70,13 @@ function montarUrlImagem(imagem?: string | null) {
     return "";
   }
 
-  if (imagem.startsWith("http")) {
-    return imagem;
+  const url = imagem.startsWith("http") ? imagem : `${API_URL}${imagem}`;
+
+  if (url.startsWith("http://")) {
+    return encodeURI(url.replace("http://", "https://"));
   }
 
-  return `${API_URL}${imagem}`;
+  return encodeURI(url);
 }
 
 function formatarData(data?: string | null) {
@@ -101,6 +104,8 @@ export default function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [erro, setErro] = useState("");
   const [pushEstado, setPushEstado] = useState<PushEstado>("verificando");
+  const [pushDetalhe, setPushDetalhe] = useState("");
+  const [imagensComErro, setImagensComErro] = useState<number[]>([]);
   const pushRegistroIniciado = useRef(false);
 
   const headers = useMemo(
@@ -124,7 +129,7 @@ export default function App() {
     if (pushEstado === "erro") {
       return {
         cor: "#ef4444",
-        texto: "Alertas inativos",
+        texto: pushDetalhe || "Alertas inativos",
       };
     }
 
@@ -132,7 +137,7 @@ export default function App() {
       cor: "#3b82f6",
       texto: "Verificando alertas",
     };
-  }, [pushEstado]);
+  }, [pushDetalhe, pushEstado]);
 
   const carregarChamados = useCallback(async () => {
     if (!token) {
@@ -152,8 +157,12 @@ export default function App() {
   }, [headers, token]);
 
   async function registrarPush(tokenAtual: string) {
+    setPushEstado("verificando");
+    setPushDetalhe("");
+
     if (!Device.isDevice) {
       setPushEstado("erro");
+      setPushDetalhe("Use um aparelho fisico");
       return;
     }
 
@@ -176,6 +185,7 @@ export default function App() {
 
     if (status !== "granted") {
       setPushEstado("erro");
+      setPushDetalhe("Permita notificacoes");
       return;
     }
 
@@ -205,6 +215,7 @@ export default function App() {
     }
 
     setPushEstado("ativo");
+    setPushDetalhe("");
   }
 
   async function entrar() {
@@ -255,6 +266,8 @@ export default function App() {
     setUsuario(null);
     setChamados([]);
     setPushEstado("verificando");
+    setPushDetalhe("");
+    setImagensComErro([]);
     pushRegistroIniciado.current = false;
   }
 
@@ -367,8 +380,13 @@ export default function App() {
     }
 
     pushRegistroIniciado.current = true;
-    registrarPush(token).catch(() => {
+    registrarPush(token).catch((error) => {
       setPushEstado("erro");
+      setPushDetalhe(
+        error instanceof Error
+          ? error.message.replace(API_URL, "API")
+          : "Erro ao registrar alertas"
+      );
     });
   }, [token]);
 
@@ -427,10 +445,22 @@ export default function App() {
           <Text style={styles.subtitle}>
             {usuario?.nome} - {usuario?.perfil}
           </Text>
-          <View style={styles.pushRow}>
+          <TouchableOpacity
+            style={styles.pushRow}
+            onPress={() =>
+              registrarPush(token).catch((error) => {
+                setPushEstado("erro");
+                setPushDetalhe(
+                  error instanceof Error
+                    ? error.message.replace(API_URL, "API")
+                    : "Erro ao registrar alertas"
+                );
+              })
+            }
+          >
             <View style={[styles.pushDot, { backgroundColor: pushInfo.cor }]} />
             <Text style={styles.pushStatus}>{pushInfo.texto}</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.secondaryButton} onPress={sair}>
@@ -480,12 +510,33 @@ export default function App() {
             ) : null}
             <Text style={styles.description}>{item.descricao}</Text>
 
-            {item.imagem ? (
-              <Image
-                source={{ uri: montarUrlImagem(item.imagem) }}
-                style={styles.ticketImage}
-                resizeMode="cover"
-              />
+            {item.imagem && !imagensComErro.includes(item.id) ? (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => Linking.openURL(montarUrlImagem(item.imagem))}
+              >
+                <Image
+                  source={{ uri: montarUrlImagem(item.imagem) }}
+                  style={styles.ticketImage}
+                  resizeMode="contain"
+                  onError={() =>
+                    setImagensComErro((ids) =>
+                      ids.includes(item.id) ? ids : [...ids, item.id]
+                    )
+                  }
+                />
+              </TouchableOpacity>
+            ) : null}
+
+            {item.imagem && imagensComErro.includes(item.id) ? (
+              <TouchableOpacity
+                style={styles.imageFallback}
+                onPress={() => Linking.openURL(montarUrlImagem(item.imagem))}
+              >
+                <Text style={styles.imageFallbackText}>
+                  Imagem nao carregou. Toque para abrir.
+                </Text>
+              </TouchableOpacity>
             ) : null}
 
             {item.urgente ? <Text style={styles.urgent}>Urgente</Text> : null}
@@ -684,9 +735,23 @@ const styles = StyleSheet.create({
     borderColor: "#27272a",
     borderRadius: 8,
     borderWidth: 1,
-    height: 190,
+    height: 170,
     marginTop: 14,
     width: "100%",
+  },
+  imageFallback: {
+    alignItems: "center",
+    backgroundColor: "#09090b",
+    borderColor: "#3f3f46",
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 14,
+    padding: 18,
+  },
+  imageFallbackText: {
+    color: "#a1a1aa",
+    fontSize: 13,
+    textAlign: "center",
   },
   urgent: {
     color: "#f87171",

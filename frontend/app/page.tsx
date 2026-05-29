@@ -1726,12 +1726,19 @@ export default function Home() {
                         </p>
 
                         {chamado.imagem && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={chamado.imagem}
-                            alt="Imagem do chamado"
-                            className="mb-5 max-h-96 w-full rounded-lg border border-zinc-800 object-cover"
-                          />
+                          <a
+                            href={chamado.imagem}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mb-5 block rounded-lg border border-zinc-800 bg-zinc-950 p-2"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={chamado.imagem}
+                              alt="Imagem do chamado"
+                              className="max-h-72 w-full rounded-md object-contain"
+                            />
+                          </a>
                         )}
 
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

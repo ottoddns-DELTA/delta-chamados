@@ -1,6 +1,10 @@
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from PIL import Image, ImageOps
+
+
+TAMANHO_MAXIMO_IMAGEM = (1600, 1600)
 
 
 class Condominio(models.Model):
@@ -92,6 +96,34 @@ class Chamado(models.Model):
             self.resolvido_em = None
 
         super().save(*args, **kwargs)
+        self.otimizar_imagem()
+
+    def otimizar_imagem(self):
+        if not self.imagem:
+            return
+
+        try:
+            imagem = Image.open(self.imagem.path)
+            imagem = ImageOps.exif_transpose(imagem)
+
+            if (
+                imagem.width <= TAMANHO_MAXIMO_IMAGEM[0]
+                and imagem.height <= TAMANHO_MAXIMO_IMAGEM[1]
+            ):
+                return
+
+            imagem.thumbnail(TAMANHO_MAXIMO_IMAGEM)
+            formato = (imagem.format or '').upper()
+
+            if formato in ['JPEG', 'JPG']:
+                if imagem.mode not in ['RGB', 'L']:
+                    imagem = imagem.convert('RGB')
+                imagem.save(self.imagem.path, quality=82, optimize=True)
+                return
+
+            imagem.save(self.imagem.path, optimize=True)
+        except Exception:
+            return
 
 
 class AccessLog(models.Model):
