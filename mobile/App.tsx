@@ -7,7 +7,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   FlatList,
+  Image,
   Platform,
   RefreshControl,
   SafeAreaView,
@@ -46,6 +48,7 @@ type Chamado = {
   condominio_nome?: string;
   criado_por_nome?: string;
   condominio: number;
+  imagem?: string | null;
   urgente: boolean;
   status: "aberto" | "andamento" | "resolvido";
 };
@@ -54,6 +57,22 @@ type LoginResponse = {
   token: string;
   user: Usuario;
 };
+
+type PushEstado = "verificando" | "ativo" | "erro";
+
+const APP_MARK = require("./assets/icon.png");
+
+function montarUrlImagem(imagem?: string | null) {
+  if (!imagem) {
+    return "";
+  }
+
+  if (imagem.startsWith("http")) {
+    return imagem;
+  }
+
+  return `${API_URL}${imagem}`;
+}
 
 export default function App() {
   const [token, setToken] = useState("");
@@ -64,7 +83,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [erro, setErro] = useState("");
-  const [pushStatus, setPushStatus] = useState("Push ainda não registrado");
+  const [pushEstado, setPushEstado] = useState<PushEstado>("verificando");
   const pushRegistroIniciado = useRef(false);
 
   const headers = useMemo(
@@ -76,6 +95,27 @@ export default function App() {
 
   const podeIniciarAtendimento =
     usuario?.perfil === "admin" || usuario?.perfil === "tecnico";
+
+  const pushInfo = useMemo(() => {
+    if (pushEstado === "ativo") {
+      return {
+        cor: "#22c55e",
+        texto: "Alertas ativos",
+      };
+    }
+
+    if (pushEstado === "erro") {
+      return {
+        cor: "#ef4444",
+        texto: "Alertas inativos",
+      };
+    }
+
+    return {
+      cor: "#3b82f6",
+      texto: "Verificando alertas",
+    };
+  }, [pushEstado]);
 
   const carregarChamados = useCallback(async () => {
     if (!token) {
@@ -94,9 +134,9 @@ export default function App() {
     setChamados(data.filter((chamado) => chamado.status !== "resolvido"));
   }, [headers, token]);
 
-async function registrarPush(tokenAtual: string) {
+  async function registrarPush(tokenAtual: string) {
     if (!Device.isDevice) {
-      setPushStatus("Push disponível apenas em aparelho físico");
+      setPushEstado("erro");
       return;
     }
 
@@ -118,19 +158,18 @@ async function registrarPush(tokenAtual: string) {
     }
 
     if (status !== "granted") {
-      setPushStatus("Permissão de notificação negada");
+      setPushEstado("erro");
       return;
     }
 
     const projectId =
       Constants.easConfig?.projectId ??
       Constants.expoConfig?.extra?.eas?.projectId;
-    setPushStatus("Gerando token push...");
+    setPushEstado("verificando");
     const expoToken = await Notifications.getExpoPushTokenAsync(
       projectId ? { projectId } : undefined
     );
 
-    setPushStatus("Registrando aparelho...");
     const response = await fetch(`${API_URL}/api/push-devices/`, {
       method: "POST",
       headers: {
@@ -148,7 +187,7 @@ async function registrarPush(tokenAtual: string) {
       throw new Error(`Erro ao registrar push: ${response.status} ${text}`);
     }
 
-    setPushStatus("Push registrado");
+    setPushEstado("ativo");
   }
 
   async function entrar() {
@@ -198,7 +237,7 @@ async function registrarPush(tokenAtual: string) {
     setToken("");
     setUsuario(null);
     setChamados([]);
-    setPushStatus("Push ainda não registrado");
+    setPushEstado("verificando");
     pushRegistroIniciado.current = false;
   }
 
@@ -267,15 +306,52 @@ async function registrarPush(tokenAtual: string) {
   }, [carregarChamados, token]);
 
   useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    function atualizarEmSeguida() {
+      setPushEstado("ativo");
+      setTimeout(() => {
+        carregarChamados().catch(() => undefined);
+      }, 700);
+    }
+
+    const recebido = Notifications.addNotificationReceivedListener(
+      atualizarEmSeguida
+    );
+    const clicado = Notifications.addNotificationResponseReceivedListener(
+      atualizarEmSeguida
+    );
+    const estado = AppState.addEventListener("change", (proximoEstado) => {
+      if (proximoEstado === "active") {
+        carregarChamados().catch(() => undefined);
+      }
+    });
+
+    Notifications.getLastNotificationResponseAsync()
+      .then((resposta) => {
+        if (resposta) {
+          atualizarEmSeguida();
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      recebido.remove();
+      clicado.remove();
+      estado.remove();
+    };
+  }, [carregarChamados, token]);
+
+  useEffect(() => {
     if (!token || pushRegistroIniciado.current) {
       return;
     }
 
     pushRegistroIniciado.current = true;
-    registrarPush(token).catch((error) => {
-      setPushStatus(
-        error instanceof Error ? error.message : "Erro ao registrar push"
-      );
+    registrarPush(token).catch(() => {
+      setPushEstado("erro");
     });
   }, [token]);
 
@@ -284,7 +360,10 @@ async function registrarPush(tokenAtual: string) {
       <SafeAreaView style={styles.container}>
         <StatusBar style="light" />
         <View style={styles.loginBox}>
-          <Text style={styles.logo}>Delta Chamados</Text>
+          <View style={styles.loginBrand}>
+            <Image source={APP_MARK} style={styles.loginMark} />
+            <Text style={styles.logo}>Delta Chamados</Text>
+          </View>
           <Text style={styles.subtitle}>Acesso técnico</Text>
 
           <TextInput
@@ -323,12 +402,18 @@ async function registrarPush(tokenAtual: string) {
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
       <View style={styles.header}>
-        <View>
-          <Text style={styles.logo}>Chamados</Text>
+        <View style={styles.headerInfo}>
+          <View style={styles.headerBrand}>
+            <Image source={APP_MARK} style={styles.headerMark} />
+            <Text style={styles.logo}>Chamados</Text>
+          </View>
           <Text style={styles.subtitle}>
             {usuario?.nome} - {usuario?.perfil}
           </Text>
-          <Text style={styles.pushStatus}>{pushStatus}</Text>
+          <View style={styles.pushRow}>
+            <View style={[styles.pushDot, { backgroundColor: pushInfo.cor }]} />
+            <Text style={styles.pushStatus}>{pushInfo.texto}</Text>
+          </View>
         </View>
 
         <TouchableOpacity style={styles.secondaryButton} onPress={sair}>
@@ -370,6 +455,14 @@ async function registrarPush(tokenAtual: string) {
             </Text>
             <Text style={styles.description}>{item.descricao}</Text>
 
+            {item.imagem ? (
+              <Image
+                source={{ uri: montarUrlImagem(item.imagem) }}
+                style={styles.ticketImage}
+                resizeMode="cover"
+              />
+            ) : null}
+
             {item.urgente ? <Text style={styles.urgent}>Urgente</Text> : null}
 
             <View style={styles.actions}>
@@ -407,6 +500,16 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 14,
   },
+  loginBrand: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 12,
+  },
+  loginMark: {
+    borderRadius: 10,
+    height: 42,
+    width: 42,
+  },
   logo: {
     color: "#fff",
     fontSize: 26,
@@ -417,9 +520,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   pushStatus: {
-    color: "#60a5fa",
+    color: "#a1a1aa",
     fontSize: 12,
-    marginTop: 4,
+  },
+  pushRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 7,
+    marginTop: 5,
+  },
+  pushDot: {
+    borderRadius: 999,
+    height: 9,
+    width: 9,
   },
   input: {
     backgroundColor: "#09090b",
@@ -462,6 +575,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     padding: 18,
+  },
+  headerInfo: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  headerBrand: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+  },
+  headerMark: {
+    borderRadius: 8,
+    height: 30,
+    width: 30,
   },
   list: {
     gap: 14,
@@ -526,6 +653,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     marginTop: 12,
+  },
+  ticketImage: {
+    backgroundColor: "#09090b",
+    borderColor: "#27272a",
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 190,
+    marginTop: 14,
+    width: "100%",
   },
   urgent: {
     color: "#f87171",
