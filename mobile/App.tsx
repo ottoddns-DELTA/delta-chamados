@@ -23,6 +23,8 @@ Notifications.setNotificationHandler({
     shouldPlaySound: true,
     shouldSetBadge: true,
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -70,6 +72,9 @@ export default function App() {
     }),
     [token]
   );
+
+  const podeIniciarAtendimento =
+    usuario?.perfil === "admin" || usuario?.perfil === "tecnico";
 
   const carregarChamados = useCallback(async () => {
     if (!token) {
@@ -364,7 +369,7 @@ async function registrarPush(tokenAtual: string) {
             {item.urgente ? <Text style={styles.urgent}>Urgente</Text> : null}
 
             <View style={styles.actions}>
-              {item.status === "aberto" ? (
+              {item.status === "aberto" && podeIniciarAtendimento ? (
                 <TouchableOpacity
                   style={styles.actionButton}
                   onPress={() => alterarStatus(item.id, "andamento")}

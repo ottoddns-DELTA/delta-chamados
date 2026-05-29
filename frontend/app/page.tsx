@@ -136,6 +136,12 @@ export default function Home() {
 
   const [nomeCondominio, setNomeCondominio] = useState("");
   const [enderecoCondominio, setEnderecoCondominio] = useState("");
+  const [editandoCondominioId, setEditandoCondominioId] = useState<
+    number | null
+  >(null);
+  const [edicaoCondominioNome, setEdicaoCondominioNome] = useState("");
+  const [edicaoCondominioEndereco, setEdicaoCondominioEndereco] =
+    useState("");
 
   const [novoUsuario, setNovoUsuario] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
@@ -172,6 +178,13 @@ export default function Home() {
     () => chamados.filter(chamadoEstaNoHistorico),
     [chamados]
   );
+
+  const podeIniciarAtendimento =
+    usuarioLogado?.perfil === "admin" || usuarioLogado?.perfil === "tecnico";
+
+  const podeGerenciarCondominios =
+    usuarioLogado?.perfil === "admin" ||
+    usuarioLogado?.perfil === "monitoramento";
 
   const imagemPreview = useMemo(
     () => (imagem ? URL.createObjectURL(imagem) : ""),
@@ -269,6 +282,73 @@ export default function Home() {
     await carregarCondominios();
 
     alert("Condomínio cadastrado!");
+  }
+
+  function iniciarEdicaoCondominio(item: Condominio) {
+    setEditandoCondominioId(item.id);
+    setEdicaoCondominioNome(item.nome);
+    setEdicaoCondominioEndereco(item.endereco);
+  }
+
+  function cancelarEdicaoCondominio() {
+    setEditandoCondominioId(null);
+    setEdicaoCondominioNome("");
+    setEdicaoCondominioEndereco("");
+  }
+
+  async function salvarEdicaoCondominio(id: number) {
+    if (!edicaoCondominioNome || !edicaoCondominioEndereco) {
+      alert("Preencha nome e endereco do condominio");
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/api/condominios/${id}/`, {
+      method: "PATCH",
+      headers: {
+        ...authHeaders,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        nome: edicaoCondominioNome,
+        endereco: edicaoCondominioEndereco,
+      }),
+    });
+
+    if (!response.ok) {
+      alert("Erro ao editar condominio");
+      return;
+    }
+
+    cancelarEdicaoCondominio();
+    await carregarCondominios();
+    alert("Condominio atualizado!");
+  }
+
+  async function excluirCondominio(id: number) {
+    const confirmado = confirm(
+      "Excluir este condominio? Chamados vinculados tambem podem ser removidos."
+    );
+
+    if (!confirmado) {
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/api/condominios/${id}/`, {
+      method: "DELETE",
+      headers: authHeaders,
+    });
+
+    if (!response.ok) {
+      alert("Erro ao excluir condominio");
+      return;
+    }
+
+    if (editandoCondominioId === id) {
+      cancelarEdicaoCondominio();
+    }
+
+    await Promise.all([carregarCondominios(), carregarChamados()]);
+    alert("Condominio excluido!");
   }
 
   async function cadastrarUsuario() {
@@ -611,19 +691,56 @@ export default function Home() {
       return;
     }
 
-    Promise.all([
+    let ativo = true;
+
+    async function carregarDados() {
+      const [listaChamados, listaCondominios] = await Promise.all([
+        fetch(`${API_URL}/api/chamados/`, {
+          cache: "no-store",
+          headers: authHeaders,
+        }).then((response) => response.json()),
+        fetch(`${API_URL}/api/condominios/`, {
+          cache: "no-store",
+          headers: authHeaders,
+        }).then((response) => response.json()),
+      ]);
+
+      if (ativo) {
+        setChamados(listaChamados);
+        setCondominios(listaCondominios);
+      }
+    }
+
+    function atualizarQuandoVoltar() {
+      if (document.visibilityState === "visible") {
+        carregarDados().catch(() => undefined);
+      }
+    }
+
+    carregarDados().catch(() => undefined);
+    const intervalo = window.setInterval(() => {
       fetch(`${API_URL}/api/chamados/`, {
         cache: "no-store",
         headers: authHeaders,
-      }).then((response) => response.json()),
-      fetch(`${API_URL}/api/condominios/`, {
-        cache: "no-store",
-        headers: authHeaders,
-      }).then((response) => response.json()),
-    ]).then(([listaChamados, listaCondominios]) => {
-      setChamados(listaChamados);
-      setCondominios(listaCondominios);
-    });
+      })
+        .then((response) => response.json())
+        .then((listaChamados) => {
+          if (ativo) {
+            setChamados(listaChamados);
+          }
+        })
+        .catch(() => undefined);
+    }, 5000);
+
+    window.addEventListener("focus", atualizarQuandoVoltar);
+    document.addEventListener("visibilitychange", atualizarQuandoVoltar);
+
+    return () => {
+      ativo = false;
+      window.clearInterval(intervalo);
+      window.removeEventListener("focus", atualizarQuandoVoltar);
+      document.removeEventListener("visibilitychange", atualizarQuandoVoltar);
+    };
   }, [authHeaders, logado, token]);
 
   if (!logado) {
@@ -753,7 +870,7 @@ export default function Home() {
                   : "bg-zinc-900 text-white hover:bg-zinc-800"
               }`}
             >
-              Chamados Abertos
+              + Abrir Chamado
             </button>
 
             <button
@@ -865,6 +982,7 @@ export default function Home() {
 
             {aba === "condominios" && (
               <>
+                {podeGerenciarCondominios && (
                 <div className="mb-8 rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
                   <h2 className="mb-5 text-2xl font-semibold">
                     Cadastrar Condomínio
@@ -899,6 +1017,7 @@ export default function Home() {
                     </button>
                   </div>
                 </div>
+                )}
 
                 <div className="grid gap-5">
                   {condominios.map((item) => (
@@ -906,11 +1025,75 @@ export default function Home() {
                       key={item.id}
                       className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-xl"
                     >
-                      <h2 className="mb-2 text-2xl font-semibold">
-                        {item.nome}
-                      </h2>
+                      {editandoCondominioId === item.id ? (
+                        <div className="grid gap-4">
+                          <input
+                            type="text"
+                            value={edicaoCondominioNome}
+                            onChange={(event) =>
+                              setEdicaoCondominioNome(event.target.value)
+                            }
+                            className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                          />
 
-                      <p className="text-zinc-400">{item.endereco}</p>
+                          <input
+                            type="text"
+                            value={edicaoCondominioEndereco}
+                            onChange={(event) =>
+                              setEdicaoCondominioEndereco(event.target.value)
+                            }
+                            className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                          />
+
+                          <div className="flex flex-wrap gap-3">
+                            <button
+                              onClick={() => salvarEdicaoCondominio(item.id)}
+                              className="rounded-md bg-white px-5 py-3 font-semibold text-black transition hover:bg-zinc-200"
+                            >
+                              Salvar
+                            </button>
+
+                            <button
+                              onClick={cancelarEdicaoCondominio}
+                              className="rounded-md border border-zinc-700 px-5 py-3 font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <h2 className="mb-2 text-2xl font-semibold">
+                                {item.nome}
+                              </h2>
+
+                              <p className="text-zinc-400">{item.endereco}</p>
+                            </div>
+
+                            {podeGerenciarCondominios && (
+                              <div className="flex flex-wrap gap-3">
+                                <button
+                                  onClick={() =>
+                                    iniciarEdicaoCondominio(item)
+                                  }
+                                  className="rounded-md border border-zinc-700 px-5 py-3 font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                                >
+                                  Editar
+                                </button>
+
+                                <button
+                                  onClick={() => excluirCondominio(item.id)}
+                                  className="rounded-md border border-red-900 px-5 py-3 font-medium text-red-300 transition hover:border-red-500 hover:text-red-100"
+                                >
+                                  Excluir
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1557,7 +1740,8 @@ export default function Home() {
                               Editar
                             </button>
 
-                            {chamado.status === "aberto" && (
+                            {chamado.status === "aberto" &&
+                              podeIniciarAtendimento && (
                               <button
                                 onClick={() =>
                                   iniciarAtendimento(chamado.id)

@@ -3,11 +3,12 @@ from django.contrib.auth.models import Group, User
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .auth_utils import PERFIS, get_client_ip, perfil_usuario
+from .auth_utils import MONITORAMENTO, PERFIS, get_client_ip, perfil_usuario
 from .models import AccessLog, ActionLog, Chamado, Condominio, PushDevice
 from .permissions import (
     AdminOnlyPermission,
@@ -100,6 +101,16 @@ class ChamadoViewSet(viewsets.ModelViewSet):
         enviar_push_novo_chamado(chamado)
 
     def perform_update(self, serializer):
+        novo_status = self.request.data.get('status')
+
+        if (
+            perfil_usuario(self.request.user) == MONITORAMENTO
+            and novo_status == 'andamento'
+        ):
+            raise PermissionDenied(
+                'Monitoramento nao pode iniciar atendimento.'
+            )
+
         chamado = serializer.save()
         registrar_acao(
             self.request,
@@ -128,6 +139,16 @@ class CondominioViewSet(viewsets.ModelViewSet):
             self.request,
             'editou_condominio',
             f'Condomínio #{condominio.id}: {condominio.nome}',
+        )
+
+    def perform_destroy(self, instance):
+        condominio_id = instance.id
+        condominio_nome = instance.nome
+        instance.delete()
+        registrar_acao(
+            self.request,
+            'excluiu_condominio',
+            f'Condominio #{condominio_id}: {condominio_nome}',
         )
 
 
