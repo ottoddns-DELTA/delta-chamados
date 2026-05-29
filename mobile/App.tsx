@@ -3,7 +3,7 @@ import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -62,6 +62,7 @@ export default function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [erro, setErro] = useState("");
   const [pushStatus, setPushStatus] = useState("Push ainda não registrado");
+  const pushRegistroIniciado = useRef(false);
 
   const headers = useMemo(
     () => ({
@@ -175,15 +176,6 @@ async function registrarPush(tokenAtual: string) {
       setToken(data.token);
       setUsuario(data.user);
       setPassword("");
-      try {
-        await registrarPush(data.token);
-      } catch (error) {
-        setPushStatus(
-          error instanceof Error
-            ? error.message
-            : "Erro ao registrar push"
-        );
-      }
     } catch (error) {
       setErro(
         `Não foi possível entrar. API: ${API_URL}. ${
@@ -200,6 +192,8 @@ async function registrarPush(tokenAtual: string) {
     setToken("");
     setUsuario(null);
     setChamados([]);
+    setPushStatus("Push ainda não registrado");
+    pushRegistroIniciado.current = false;
   }
 
   async function alterarStatus(id: number, status: Chamado["status"]) {
@@ -265,6 +259,19 @@ async function registrarPush(tokenAtual: string) {
 
     return () => clearInterval(intervalo);
   }, [carregarChamados, token]);
+
+  useEffect(() => {
+    if (!token || pushRegistroIniciado.current) {
+      return;
+    }
+
+    pushRegistroIniciado.current = true;
+    registrarPush(token).catch((error) => {
+      setPushStatus(
+        error instanceof Error ? error.message : "Erro ao registrar push"
+      );
+    });
+  }, [token]);
 
   if (!token) {
     return (
