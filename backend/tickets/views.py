@@ -93,10 +93,15 @@ class MelhorarTextoView(APIView):
         api_key = os.environ.get('DEEPSEEK_API_KEY')
 
         if not api_key:
-            return Response({
-                'texto': melhorar_texto_local(texto),
-                'origem': 'local',
-            })
+            return Response(
+                {
+                    'detail': (
+                        'DeepSeek nao configurado. Defina DEEPSEEK_API_KEY '
+                        'nas variaveis do backend.'
+                    ),
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
         modelo = os.environ.get('DEEPSEEK_MODEL', 'deepseek-chat')
         prompt_sistema = (
@@ -156,11 +161,31 @@ class MelhorarTextoView(APIView):
                 'texto': texto_melhorado,
                 'origem': 'deepseek',
             })
-        except Exception:
-            return Response({
-                'texto': melhorar_texto_local(texto),
-                'origem': 'local',
-            })
+        except requests.RequestException as erro:
+            status_code = getattr(erro.response, 'status_code', None)
+            detalhe = ''
+
+            if erro.response is not None:
+                detalhe = erro.response.text[:240]
+
+            return Response(
+                {
+                    'detail': (
+                        'DeepSeek falhou. Verifique chave, creditos e modelo.'
+                    ),
+                    'status_code': status_code,
+                    'erro': detalhe,
+                },
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except Exception as erro:
+            return Response(
+                {
+                    'detail': 'DeepSeek retornou uma resposta invalida.',
+                    'erro': str(erro),
+                },
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
 
 
 class LoginView(APIView):

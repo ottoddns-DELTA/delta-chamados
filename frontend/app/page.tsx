@@ -87,32 +87,6 @@ function formatarData(data?: string | null) {
   }).format(new Date(data));
 }
 
-function melhorarDescricaoTecnica(texto: string) {
-  const textoLimpo = texto.replace(/\s+/g, " ").trim();
-
-  if (!textoLimpo) {
-    return "";
-  }
-
-  let textoMelhorado = textoLimpo
-    .replace(/\bfoi trocado a\b/gi, "Foi realizada a troca da")
-    .replace(/\bfoi trocada a\b/gi, "Foi realizada a troca da")
-    .replace(/\bfoi trocado o\b/gi, "Foi realizada a troca do")
-    .replace(/\bfizemos\b/gi, "realizamos")
-    .replace(/\barrumamos\b/gi, "realizamos o reparo em")
-    .replace(/\bconsertamos\b/gi, "realizamos o reparo em")
-    .replace(/\blampada\b/gi, "lampada");
-
-  textoMelhorado =
-    textoMelhorado.charAt(0).toUpperCase() + textoMelhorado.slice(1);
-
-  if (!/[.!?]$/.test(textoMelhorado)) {
-    textoMelhorado += ".";
-  }
-
-  return textoMelhorado;
-}
-
 export default function Home() {
   const [logado, setLogado] = useState(
     () =>
@@ -262,13 +236,23 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error("Erro ao melhorar texto");
+        const data = await response.json().catch(() => null);
+        throw new Error(
+          data?.detail ||
+            data?.erro ||
+            "Nao foi possivel melhorar o texto com IA."
+        );
       }
 
       const data = await response.json();
-      return data.texto || melhorarDescricaoTecnica(textoLimpo);
-    } catch {
-      return melhorarDescricaoTecnica(textoLimpo);
+      return data.texto || textoLimpo;
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel melhorar o texto com IA."
+      );
+      return texto;
     } finally {
       setMelhorandoTexto(false);
     }
