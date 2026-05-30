@@ -23,7 +23,15 @@
       ]
     },
     "plugins": [
-      "expo-notifications"
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "default",
+          "sounds": [
+            "./assets/sounds/urgent.wav"
+          ]
+        }
+      ]
     ],
     "extra": {
       "apiUrl": "https://delta-chamados-production.up.railway.app",

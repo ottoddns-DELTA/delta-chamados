@@ -35,6 +35,9 @@ Notifications.setNotificationHandler({
 const API_URL =
   (Constants.expoConfig?.extra?.apiUrl as string | undefined) ??
   "https://deltachamados.up.railway.app";
+const CANAL_CHAMADOS = "default";
+const CANAL_URGENTES = "urgent";
+const SOM_URGENTE = "urgent.wav";
 
 type Usuario = {
   id: number;
@@ -174,11 +177,19 @@ export default function App() {
     }
 
     if (Platform.OS === "android") {
-      await Notifications.setNotificationChannelAsync("default", {
+      await Notifications.setNotificationChannelAsync(CANAL_CHAMADOS, {
         name: "Chamados",
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#2563eb",
+      });
+
+      await Notifications.setNotificationChannelAsync(CANAL_URGENTES, {
+        name: "Chamados urgentes",
+        importance: Notifications.AndroidImportance.MAX,
+        sound: SOM_URGENTE,
+        vibrationPattern: [0, 500, 180, 500, 180, 900],
+        lightColor: "#ef4444",
       });
     }
 
