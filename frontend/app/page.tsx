@@ -1,7 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type MouseEvent,
+} from "react";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
@@ -1329,6 +1335,51 @@ export default function Home() {
 
     setDescricaoCopiadaId(chamado.id);
     window.setTimeout(() => setDescricaoCopiadaId(null), 1400);
+  }
+
+  function textoCompartilhamentoChamado(chamado: Chamado) {
+    return [
+      "Delta Chamados",
+      `Condominio: ${chamado.condominio_nome || chamado.condominio}`,
+      `Chamado: ${chamado.titulo}`,
+      `Descricao: ${chamado.descricao}`,
+      chamado.descricao_resolucao
+        ? `Feito: ${chamado.descricao_resolucao}`
+        : "",
+      chamado.criado_em ? `Aberto em: ${formatarData(chamado.criado_em)}` : "",
+      chamado.resolvido_em
+        ? `Resolvido em: ${formatarData(chamado.resolvido_em)}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  function compartilharWhatsApp(
+    event: MouseEvent<HTMLButtonElement>,
+    chamado: Chamado
+  ) {
+    event.stopPropagation();
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(
+        textoCompartilhamentoChamado(chamado)
+      )}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
+  function compartilharEmail(
+    event: MouseEvent<HTMLButtonElement>,
+    chamado: Chamado
+  ) {
+    event.stopPropagation();
+    const assunto = `Delta Chamados - ${
+      chamado.condominio_nome || chamado.titulo
+    }`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(
+      assunto
+    )}&body=${encodeURIComponent(textoCompartilhamentoChamado(chamado))}`;
   }
 
   async function iniciarAtendimento(id: number) {
@@ -3080,6 +3131,10 @@ export default function Home() {
                           </div>
                         </div>
 
+                        <p className="mb-3 text-sm leading-5 text-slate-200">
+                          {chamado.descricao}
+                        </p>
+
                         {chamado.status === "resolvido" &&
                           chamado.descricao_resolucao && (
                             <button
@@ -3104,10 +3159,6 @@ export default function Home() {
                               </span>
                             </button>
                           )}
-
-                        <p className="mb-3 text-sm leading-5 text-slate-200">
-                          {chamado.descricao}
-                        </p>
 
                         {chamado.imagem && (
                           <a
@@ -3172,6 +3223,54 @@ export default function Home() {
                                   <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
                                 </svg>
                               </button>
+                            )}
+
+                            {chamado.status === "resolvido" && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={(event) =>
+                                    compartilharWhatsApp(event, chamado)
+                                  }
+                                  title="Compartilhar no WhatsApp"
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-600 text-slate-300 transition hover:border-emerald-400/70 hover:bg-emerald-500/10 hover:text-emerald-200"
+                                >
+                                  <svg
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="1.8"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path d="M12 20a8 8 0 1 0-7-4.1L4 21l5.2-1.3A8 8 0 0 0 12 20Z" />
+                                    <path d="M8.8 9.1c.2 3 2.1 5 5 5.7l1.4-1.4-2-1-1 1c-1-.4-1.8-1.2-2.2-2.2l1-1-1-2-1.2.9Z" />
+                                  </svg>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={(event) =>
+                                    compartilharEmail(event, chamado)
+                                  }
+                                  title="Compartilhar por email"
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-600 text-slate-300 transition hover:border-blue-400/70 hover:bg-blue-500/10 hover:text-blue-200"
+                                >
+                                  <svg
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="1.8"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path d="M4 6h16v12H4Z" />
+                                    <path d="m4 7 8 6 8-6" />
+                                  </svg>
+                                </button>
+                              </>
                             )}
 
                             {aba === "historico" && (
