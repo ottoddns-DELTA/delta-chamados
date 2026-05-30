@@ -310,6 +310,63 @@ function classeEventoNotificacao(evento: NotificationLog["evento"]) {
   return "bg-slate-500/20 text-slate-300";
 }
 
+function PasswordInput({
+  value,
+  onChange,
+  placeholder,
+  visivel,
+  onToggle,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  visivel: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="relative">
+      <input
+        type={visivel ? "text" : "password"}
+        placeholder={placeholder}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-md border border-slate-700 bg-[#0F172A] p-4 pr-12 text-white outline-none transition focus:border-emerald-500"
+      />
+
+      <button
+        type="button"
+        onClick={onToggle}
+        title={visivel ? "Ocultar senha" : "Mostrar senha"}
+        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+      >
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.8"
+          viewBox="0 0 24 24"
+        >
+          {visivel ? (
+            <>
+              <path d="M3 3l18 18" />
+              <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+              <path d="M9.9 4.2A9.8 9.8 0 0 1 12 4c5 0 8.5 4.2 9.7 6a2.8 2.8 0 0 1 0 3.1 15.8 15.8 0 0 1-2.1 2.7" />
+              <path d="M6.4 6.4A15.7 15.7 0 0 0 2.3 10a2.8 2.8 0 0 0 0 3.1C3.5 15 7 19 12 19a9.7 9.7 0 0 0 4.1-.9" />
+            </>
+          ) : (
+            <>
+              <path d="M2.3 10.9a2.8 2.8 0 0 0 0 2.2C3.5 15 7 19 12 19s8.5-4 9.7-5.9a2.8 2.8 0 0 0 0-2.2C20.5 9 17 5 12 5s-8.5 4-9.7 5.9Z" />
+              <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+            </>
+          )}
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 export default function Home() {
   const [logado, setLogado] = useState(
     () =>
@@ -385,6 +442,14 @@ export default function Home() {
 
   const [novoUsuario, setNovoUsuario] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
+  const [confirmarNovaSenhaUsuario, setConfirmarNovaSenhaUsuario] =
+    useState("");
+  const [mostrarNovaSenhaUsuario, setMostrarNovaSenhaUsuario] =
+    useState(false);
+  const [
+    mostrarConfirmarNovaSenhaUsuario,
+    setMostrarConfirmarNovaSenhaUsuario,
+  ] = useState(false);
   const [novoPerfil, setNovoPerfil] =
     useState<UsuarioSistema["perfil"]>("monitoramento");
   const [editandoUsuarioId, setEditandoUsuarioId] = useState<number | null>(
@@ -395,6 +460,14 @@ export default function Home() {
     useState<UsuarioSistema["perfil"]>("monitoramento");
   const [edicaoUsuarioAtivo, setEdicaoUsuarioAtivo] = useState(true);
   const [edicaoUsuarioSenha, setEdicaoUsuarioSenha] = useState("");
+  const [edicaoUsuarioConfirmarSenha, setEdicaoUsuarioConfirmarSenha] =
+    useState("");
+  const [mostrarEdicaoUsuarioSenha, setMostrarEdicaoUsuarioSenha] =
+    useState(false);
+  const [
+    mostrarEdicaoUsuarioConfirmarSenha,
+    setMostrarEdicaoUsuarioConfirmarSenha,
+  ] = useState(false);
 
   const chamadosAbertos = useMemo(
     () => chamados.filter((chamado) => chamado.status === "aberto"),
@@ -673,8 +746,13 @@ export default function Home() {
   }
 
   async function cadastrarUsuario() {
-    if (!novoUsuario || !novaSenha || !novoPerfil) {
-      alert("Preencha usuário, senha e perfil");
+    if (!novoUsuario || !novaSenha || !confirmarNovaSenhaUsuario || !novoPerfil) {
+      alert("Preencha usuario, senha, confirmacao e perfil");
+      return;
+    }
+
+    if (novaSenha !== confirmarNovaSenhaUsuario) {
+      alert("A senha e a confirmacao precisam ser iguais.");
       return;
     }
 
@@ -701,6 +779,9 @@ export default function Home() {
 
     setNovoUsuario("");
     setNovaSenha("");
+    setConfirmarNovaSenhaUsuario("");
+    setMostrarNovaSenhaUsuario(false);
+    setMostrarConfirmarNovaSenhaUsuario(false);
     setNovoPerfil("monitoramento");
     await carregarAdmin();
     alert("Usuário criado!");
@@ -712,6 +793,9 @@ export default function Home() {
     setEdicaoUsuarioPerfil(usuarioSistema.perfil);
     setEdicaoUsuarioAtivo(usuarioSistema.is_active);
     setEdicaoUsuarioSenha("");
+    setEdicaoUsuarioConfirmarSenha("");
+    setMostrarEdicaoUsuarioSenha(false);
+    setMostrarEdicaoUsuarioConfirmarSenha(false);
   }
 
   function cancelarEdicaoUsuario() {
@@ -720,6 +804,9 @@ export default function Home() {
     setEdicaoUsuarioPerfil("monitoramento");
     setEdicaoUsuarioAtivo(true);
     setEdicaoUsuarioSenha("");
+    setEdicaoUsuarioConfirmarSenha("");
+    setMostrarEdicaoUsuarioSenha(false);
+    setMostrarEdicaoUsuarioConfirmarSenha(false);
   }
 
   async function salvarUsuario(id: number) {
@@ -748,7 +835,17 @@ export default function Home() {
       return;
     }
 
-    if (edicaoUsuarioSenha) {
+    if (edicaoUsuarioSenha || edicaoUsuarioConfirmarSenha) {
+      if (!edicaoUsuarioSenha || !edicaoUsuarioConfirmarSenha) {
+        alert("Para trocar a senha, preencha a nova senha e a confirmacao.");
+        return;
+      }
+
+      if (edicaoUsuarioSenha !== edicaoUsuarioConfirmarSenha) {
+        alert("A nova senha e a confirmacao precisam ser iguais.");
+        return;
+      }
+
       const senhaResponse = await fetch(
         `${API_URL}/api/usuarios/${id}/senha/`,
         {
@@ -1809,7 +1906,7 @@ export default function Home() {
                         Criar usuário
                       </h2>
 
-                      <div className="grid gap-4 md:grid-cols-[1fr_1fr_220px_auto]">
+                      <div className="grid gap-4 xl:grid-cols-[1fr_1fr_1fr_200px_auto]">
                         <input
                           type="text"
                           placeholder="Usuário"
@@ -1820,12 +1917,26 @@ export default function Home() {
                           className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
                         />
 
-                        <input
-                          type="password"
+                        <PasswordInput
                           placeholder="Senha"
                           value={novaSenha}
-                          onChange={(event) => setNovaSenha(event.target.value)}
-                          className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
+                          onChange={setNovaSenha}
+                          visivel={mostrarNovaSenhaUsuario}
+                          onToggle={() =>
+                            setMostrarNovaSenhaUsuario((mostrar) => !mostrar)
+                          }
+                        />
+
+                        <PasswordInput
+                          placeholder="Confirmar senha"
+                          value={confirmarNovaSenhaUsuario}
+                          onChange={setConfirmarNovaSenhaUsuario}
+                          visivel={mostrarConfirmarNovaSenhaUsuario}
+                          onToggle={() =>
+                            setMostrarConfirmarNovaSenhaUsuario(
+                              (mostrar) => !mostrar
+                            )
+                          }
                         />
 
                         <select
@@ -1906,15 +2017,33 @@ export default function Home() {
                                   </label>
                                 </div>
 
-                                <input
-                                  type="password"
-                                  placeholder="Nova senha, deixe em branco para manter"
-                                  value={edicaoUsuarioSenha}
-                                  onChange={(event) =>
-                                    setEdicaoUsuarioSenha(event.target.value)
-                                  }
-                                  className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
-                                />
+                                <div className="grid gap-4 md:grid-cols-2">
+                                  <PasswordInput
+                                    placeholder="Nova senha, deixe em branco para manter"
+                                    value={edicaoUsuarioSenha}
+                                    onChange={setEdicaoUsuarioSenha}
+                                    visivel={mostrarEdicaoUsuarioSenha}
+                                    onToggle={() =>
+                                      setMostrarEdicaoUsuarioSenha(
+                                        (mostrar) => !mostrar
+                                      )
+                                    }
+                                  />
+
+                                  <PasswordInput
+                                    placeholder="Confirmar nova senha"
+                                    value={edicaoUsuarioConfirmarSenha}
+                                    onChange={setEdicaoUsuarioConfirmarSenha}
+                                    visivel={
+                                      mostrarEdicaoUsuarioConfirmarSenha
+                                    }
+                                    onToggle={() =>
+                                      setMostrarEdicaoUsuarioConfirmarSenha(
+                                        (mostrar) => !mostrar
+                                      )
+                                    }
+                                  />
+                                </div>
 
                                 <div className="flex flex-wrap gap-3">
                                   <button
