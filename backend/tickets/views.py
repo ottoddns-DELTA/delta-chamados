@@ -271,7 +271,7 @@ class ChamadoViewSet(viewsets.ModelViewSet):
 
 class CondominioViewSet(viewsets.ModelViewSet):
 
-    queryset = Condominio.objects.all().order_by('-id')
+    queryset = Condominio.objects.all().order_by('nome')
     serializer_class = CondominioSerializer
     permission_classes = [PerfilCondominioPermission]
 

@@ -18,6 +18,12 @@ type Condominio = {
   endereco: string;
 };
 
+function ordenarCondominios(lista: Condominio[]) {
+  return [...lista].sort((a, b) =>
+    a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" })
+  );
+}
+
 type Chamado = {
   id: number;
   titulo: string;
@@ -364,7 +370,7 @@ export default function Home() {
       headers: authHeaders,
     });
     const data = await response.json();
-    setCondominios(data);
+    setCondominios(ordenarCondominios(data));
   }
 
   async function carregarAdmin() {
@@ -419,8 +425,10 @@ export default function Home() {
     }
 
     setCondominios((listaAtual) => [
-      data,
-      ...listaAtual.filter((item) => item.id !== data.id),
+      ...ordenarCondominios([
+        data,
+        ...listaAtual.filter((item) => item.id !== data.id),
+      ]),
     ]);
     setNomeCondominio("");
     setEnderecoCondominio("");
@@ -888,7 +896,7 @@ export default function Home() {
 
       if (ativo) {
         setChamados(listaChamados);
-        setCondominios(listaCondominios);
+        setCondominios(ordenarCondominios(listaCondominios));
       }
     }
 
