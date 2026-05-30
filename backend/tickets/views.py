@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import Group, User
 from django.core.cache import cache
+from django.utils import timezone
 import requests
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
@@ -359,6 +360,37 @@ class ChamadoViewSet(viewsets.ModelViewSet):
             f'Chamado #{chamado.id}: {chamado.titulo}',
         )
         enviar_push_novo_chamado(chamado)
+
+    @action(detail=True, methods=['post'], url_path='marcar-recebido')
+    def marcar_recebido(self, request, pk=None):
+        chamado = self.get_object()
+
+        if not chamado.recebido_em:
+            chamado.recebido_em = timezone.now()
+            chamado.save(update_fields=['recebido_em', 'atualizado_em'])
+
+        return Response(self.get_serializer(chamado).data)
+
+    @action(detail=True, methods=['post'], url_path='marcar-visualizado')
+    def marcar_visualizado(self, request, pk=None):
+        chamado = self.get_object()
+
+        if not chamado.visualizado_em:
+            chamado.visualizado_em = timezone.now()
+
+            if not chamado.recebido_em:
+                chamado.recebido_em = chamado.visualizado_em
+                chamado.save(
+                    update_fields=[
+                        'recebido_em',
+                        'visualizado_em',
+                        'atualizado_em',
+                    ]
+                )
+            else:
+                chamado.save(update_fields=['visualizado_em', 'atualizado_em'])
+
+        return Response(self.get_serializer(chamado).data)
 
     def perform_update(self, serializer):
         novo_status = self.request.data.get('status')

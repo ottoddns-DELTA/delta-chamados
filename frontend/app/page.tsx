@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
@@ -47,6 +47,8 @@ type Chamado = {
   criado_em?: string;
   atualizado_em?: string;
   resolvido_em?: string | null;
+  recebido_em?: string | null;
+  visualizado_em?: string | null;
 };
 
 type UsuarioLogado = {
@@ -284,6 +286,18 @@ function formatarData(data?: string | null) {
     dateStyle: "short",
     timeStyle: "short",
   }).format(new Date(data));
+}
+
+function statusRecebimento(chamado: Chamado) {
+  if (chamado.visualizado_em) {
+    return `Visualizada em ${formatarData(chamado.visualizado_em)}`;
+  }
+
+  if (chamado.recebido_em) {
+    return `Recebida em ${formatarData(chamado.recebido_em)}`;
+  }
+
+  return "Recebida pendente";
 }
 
 function escaparHtml(texto?: string | number | null) {
@@ -685,9 +699,61 @@ export default function Home() {
       cache: "no-store",
       headers: authHeaders,
     });
-    const data = await response.json();
-    setChamados(data);
+    const data = (await response.json()) as Chamado[];
+    setChamados(marcarRecebidosDaLista(data));
   }
+
+  async function marcarVisualizado(chamado: Chamado) {
+    if (chamado.visualizado_em || usuarioLogado?.perfil !== "tecnico") {
+      return;
+    }
+
+    const agora = new Date().toISOString();
+
+    setChamados((listaAtual) =>
+      listaAtual.map((item) =>
+        item.id === chamado.id
+          ? {
+              ...item,
+              recebido_em: item.recebido_em || agora,
+              visualizado_em: agora,
+            }
+          : item
+      )
+    );
+
+    await fetch(`${API_URL}/api/chamados/${chamado.id}/marcar-visualizado/`, {
+      method: "POST",
+      headers: authHeaders,
+    }).catch(() => undefined);
+  }
+
+  const marcarRecebidosDaLista = useCallback((lista: Chamado[]) => {
+    if (usuarioLogado?.perfil !== "tecnico") {
+      return lista;
+    }
+
+    const agora = new Date().toISOString();
+
+    lista
+      .filter(
+        (chamado) =>
+          chamado.status !== "resolvido" &&
+          !chamado.recebido_em
+      )
+      .forEach((chamado) => {
+        fetch(`${API_URL}/api/chamados/${chamado.id}/marcar-recebido/`, {
+          method: "POST",
+          headers: authHeaders,
+        }).catch(() => undefined);
+      });
+
+    return lista.map((chamado) =>
+      chamado.status !== "resolvido" && !chamado.recebido_em
+        ? { ...chamado, recebido_em: agora }
+        : chamado
+    );
+  }, [authHeaders, usuarioLogado?.perfil]);
 
   async function carregarCondominios() {
     const response = await fetch(`${API_URL}/api/condominios/`, {
@@ -1139,6 +1205,7 @@ export default function Home() {
               <div><dt>Condominio</dt><dd>${escaparHtml(chamado.condominio_nome || chamado.condominio)}</dd></div>
               <div><dt>Aberto por</dt><dd>${escaparHtml(chamado.criado_por_nome || "nao informado")}</dd></div>
               <div><dt>Aberto em</dt><dd>${escaparHtml(formatarData(chamado.criado_em))}</dd></div>
+              <div><dt>Status de leitura</dt><dd>${escaparHtml(statusRecebimento(chamado))}</dd></div>
               <div><dt>Editado por</dt><dd>${escaparHtml(chamado.editado_por_nome || "Nao editado")}</dd></div>
               <div><dt>Ultima edicao</dt><dd>${escaparHtml(chamado.editado_por_nome ? formatarData(chamado.atualizado_em) : "Nao editado")}</dd></div>
               <div><dt>Resolvido em</dt><dd>${escaparHtml(formatarData(chamado.resolvido_em))}</dd></div>
@@ -1498,7 +1565,7 @@ export default function Home() {
       ]);
 
       if (ativo) {
-        setChamados(listaChamados);
+        setChamados(marcarRecebidosDaLista(listaChamados));
         setCondominios(ordenarCondominios(listaCondominios));
       }
     }
@@ -1518,7 +1585,7 @@ export default function Home() {
         .then((response) => response.json())
         .then((listaChamados) => {
           if (ativo) {
-            setChamados(listaChamados);
+            setChamados(marcarRecebidosDaLista(listaChamados));
           }
         })
         .catch(() => undefined);
@@ -1533,7 +1600,7 @@ export default function Home() {
       window.removeEventListener("focus", atualizarQuandoVoltar);
       document.removeEventListener("visibilitychange", atualizarQuandoVoltar);
     };
-  }, [authHeaders, logado, token]);
+  }, [authHeaders, logado, marcarRecebidosDaLista, token, usuarioLogado?.perfil]);
 
   if (!logado) {
     return (
@@ -1892,8 +1959,8 @@ export default function Home() {
           </div>
         </aside>
 
-        <div className="flex-1 bg-[#0F172A] p-5 sm:p-8 lg:p-10">
-          <div className="mx-auto max-w-5xl">
+        <div className="flex-1 bg-[#0F172A] p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-4xl">
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h1 className="mb-1 text-2xl font-bold tracking-tight text-white sm:text-3xl">
@@ -2780,12 +2847,17 @@ export default function Home() {
                       <div
                         key={chamado.id}
                         title={`Aberto por: ${chamado.criado_por_nome || "nao informado"}`}
-                        className={`relative rounded-lg border bg-[#1F2937] p-6 shadow-xl transition ${
+                        onClick={() => marcarVisualizado(chamado)}
+                        className={`relative rounded-lg border bg-[#1F2937] p-5 shadow-xl transition ${
                           aba === "historico" &&
                           chamadosSelecionadosPdf.includes(chamado.id)
                             ? "border-emerald-400/70 shadow-[0_0_0_1px_rgba(16,185,129,0.18),0_20px_40px_rgba(15,23,42,0.35)]"
                             : "border-slate-700/70"
-                        } ${aba === "historico" ? "pb-16" : ""}`}
+                        } ${aba === "historico" ? "pb-16" : ""} ${
+                          usuarioLogado?.perfil === "tecnico"
+                            ? "cursor-pointer"
+                            : ""
+                        }`}
                       >
                         {editandoChamadoId === chamado.id ? (
                           <div className="grid gap-4">
@@ -2964,9 +3036,15 @@ export default function Home() {
                         ) : (
                           <>
                         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <h2 className="text-2xl font-semibold">
-                            {chamado.titulo}
-                          </h2>
+                          <div>
+                            <p className="mb-2 inline-flex rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-blue-200">
+                              {chamado.condominio_nome || chamado.condominio}
+                            </p>
+
+                            <h2 className="text-xl font-semibold">
+                              {chamado.titulo}
+                            </h2>
+                          </div>
 
                           <div className="flex flex-wrap gap-2">
                             {chamado.urgente && (
@@ -3000,7 +3078,32 @@ export default function Home() {
                           </div>
                         </div>
 
-                        <p className="mb-5 text-slate-200">
+                        {chamado.status === "resolvido" &&
+                          chamado.descricao_resolucao && (
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                copiarDescricaoResolucao(chamado);
+                              }}
+                              className="mb-4 block w-full rounded-lg border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-left text-slate-100 transition hover:border-emerald-400/60 hover:bg-emerald-500/15"
+                              title="Clique para copiar o texto feito pelo tecnico"
+                            >
+                              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-emerald-300">
+                                Feito
+                              </span>
+                              <span className="text-sm leading-6">
+                                {chamado.descricao_resolucao}
+                              </span>
+                              <span className="ml-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-200">
+                                {descricaoCopiadaId === chamado.id
+                                  ? "Copiado"
+                                  : "Copiar"}
+                              </span>
+                            </button>
+                          )}
+
+                        <p className="mb-4 text-sm leading-6 text-slate-200">
                           {chamado.descricao}
                         </p>
 
@@ -3021,12 +3124,7 @@ export default function Home() {
                         )}
 
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="text-sm text-slate-400">
-                            <p>
-                              Condomínio:{" "}
-                              {chamado.condominio_nome || chamado.condominio}
-                            </p>
-
+                          <div className="text-xs leading-5 text-slate-400">
                             <p>
                               Aberto por:{" "}
                               {chamado.criado_por_nome || "nao informado"}
@@ -3034,6 +3132,18 @@ export default function Home() {
 
                             <p>
                               Aberto em: {formatarData(chamado.criado_em)}
+                            </p>
+
+                            <p
+                              className={
+                                chamado.visualizado_em
+                                  ? "font-semibold text-emerald-300"
+                                  : chamado.recebido_em
+                                    ? "font-semibold text-blue-300"
+                                    : "font-semibold text-yellow-300"
+                              }
+                            >
+                              {statusRecebimento(chamado)}
                             </p>
 
                             {chamado.editado_por_nome && (
@@ -3056,25 +3166,6 @@ export default function Home() {
                                   {formatarData(chamado.resolvido_em)}
                                 </p>
                               )}
-
-                            {chamado.descricao_resolucao && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  copiarDescricaoResolucao(chamado)
-                                }
-                                className="mt-2 block max-w-2xl rounded-md border border-slate-700/60 bg-slate-900/30 px-3 py-2 text-left text-slate-200 transition hover:border-emerald-400/60 hover:bg-slate-900/60"
-                                title="Clique para copiar o texto feito pelo tecnico"
-                              >
-                                <span className="font-semibold">Feito:</span>{" "}
-                                {chamado.descricao_resolucao}
-                                <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-300">
-                                  {descricaoCopiadaId === chamado.id
-                                    ? "Copiado"
-                                    : "Copiar"}
-                                </span>
-                              </button>
-                            )}
 
                             {chamado.urgente ? (
                               <p className="font-semibold text-red-400">

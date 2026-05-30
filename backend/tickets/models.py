@@ -90,6 +90,16 @@ class Chamado(models.Model):
         null=True
     )
 
+    recebido_em = models.DateTimeField(
+        blank=True,
+        null=True
+    )
+
+    visualizado_em = models.DateTimeField(
+        blank=True,
+        null=True
+    )
+
     def __str__(self):
         return self.titulo
 

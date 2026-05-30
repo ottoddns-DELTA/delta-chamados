@@ -60,6 +60,8 @@ type Chamado = {
   status: "aberto" | "andamento" | "resolvido";
   criado_em?: string;
   resolvido_em?: string | null;
+  recebido_em?: string | null;
+  visualizado_em?: string | null;
 };
 
 type LoginResponse = {
@@ -98,6 +100,18 @@ function formatarData(data?: string | null) {
   )}/${valor.getFullYear()} ${doisDigitos(valor.getHours())}:${doisDigitos(
     valor.getMinutes()
   )}`;
+}
+
+function statusRecebimento(chamado: Chamado) {
+  if (chamado.visualizado_em) {
+    return `Visualizada em ${formatarData(chamado.visualizado_em)}`;
+  }
+
+  if (chamado.recebido_em) {
+    return `Recebida em ${formatarData(chamado.recebido_em)}`;
+  }
+
+  return "Recebida pendente";
 }
 
 export default function App() {
@@ -168,9 +182,21 @@ export default function App() {
     const chamadosAtivos = data.filter(
       (chamado) => chamado.status !== "resolvido"
     );
-    setChamados(chamadosAtivos);
+    const agora = new Date().toISOString();
+    setChamados(
+      chamadosAtivos.map((chamado) =>
+        !chamado.recebido_em ? { ...chamado, recebido_em: agora } : chamado
+      )
+    );
 
     chamadosAtivos.forEach((chamado) => {
+      if (!chamado.recebido_em) {
+        fetch(`${API_URL}/api/chamados/${chamado.id}/marcar-recebido/`, {
+          method: "POST",
+          headers,
+        }).catch(() => undefined);
+      }
+
       const chave = `recebido-lista-${chamado.id}`;
 
       if (eventosNotificacao.current.has(chave)) {
@@ -377,6 +403,30 @@ export default function App() {
     } catch {
       Alert.alert("Erro", "Não foi possível atualizar o chamado.");
     }
+  }
+
+  async function marcarVisualizado(chamado: Chamado) {
+    if (chamado.visualizado_em) {
+      return;
+    }
+
+    const agora = new Date().toISOString();
+    setChamados((listaAtual) =>
+      listaAtual.map((item) =>
+        item.id === chamado.id
+          ? {
+              ...item,
+              recebido_em: item.recebido_em || agora,
+              visualizado_em: agora,
+            }
+          : item
+      )
+    );
+
+    await fetch(`${API_URL}/api/chamados/${chamado.id}/marcar-visualizado/`, {
+      method: "POST",
+      headers,
+    }).catch(() => undefined);
   }
 
   async function melhorarTexto(texto: string, contexto: string) {
@@ -740,7 +790,11 @@ export default function App() {
           </View>
         }
         renderItem={({ item }) => (
-          <View style={[styles.card, item.urgente && styles.urgentCard]}>
+          <TouchableOpacity
+            activeOpacity={0.92}
+            onPress={() => marcarVisualizado(item)}
+            style={[styles.card, item.urgente && styles.urgentCard]}
+          >
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>{item.titulo}</Text>
               <Text
@@ -762,6 +816,7 @@ export default function App() {
             <Text style={styles.openedBy}>
               Aberto em: {formatarData(item.criado_em)}
             </Text>
+            <Text style={styles.receivedStatus}>{statusRecebimento(item)}</Text>
             {item.assumido_por_nome ? (
               <Text style={styles.assumedBy}>
                 Assumido por: {item.assumido_por_nome}
@@ -822,7 +877,7 @@ export default function App() {
                 <Text style={styles.actionButtonText}>Marcar como resolvido</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
       />
     </SafeAreaView>
@@ -1003,6 +1058,12 @@ const styles = StyleSheet.create({
   openedBy: {
     color: "#71717a",
     fontSize: 13,
+    marginTop: 4,
+  },
+  receivedStatus: {
+    color: "#60a5fa",
+    fontSize: 13,
+    fontWeight: "700",
     marginTop: 4,
   },
   assumedBy: {
