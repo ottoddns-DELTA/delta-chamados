@@ -653,6 +653,15 @@ class NotificationLogViewSet(viewsets.ModelViewSet):
         corpo = log_origem.corpo if log_origem else request.data.get('corpo', '')
         urgente = log_origem.urgente if log_origem else bool(request.data.get('urgente'))
 
+        if chamado and not titulo:
+            titulo = 'Chamado recebido'
+
+        if chamado and not corpo:
+            corpo = f'{chamado.condominio.nome}: {chamado.titulo}'
+
+        if chamado:
+            urgente = chamado.urgente
+
         if evento == 'recebido' and chamado:
             notification_log = NotificationLog.objects.filter(
                 usuario=request.user,

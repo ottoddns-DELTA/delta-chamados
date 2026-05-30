@@ -88,7 +88,9 @@ type ActionLog = {
 
 type NotificationLog = {
   id: number;
+  usuario?: number;
   usuario_nome?: string;
+  chamado?: number;
   chamado_titulo?: string;
   condominio_nome?: string;
   evento: "enviado" | "recebido" | "aberto" | "falha";
@@ -512,6 +514,78 @@ export default function Home() {
     chamadosResolvidos.every((chamado) =>
       chamadosSelecionadosPdf.includes(chamado.id)
     );
+  const linhasNotificacao = useMemo(() => {
+    const usados = new Set<number>();
+    const linhas: Array<{
+      enviado: NotificationLog;
+      recebido: NotificationLog | null;
+      aberto: NotificationLog | null;
+    }> = [];
+    const mesmasNotificacoes = (
+      origem: NotificationLog,
+      candidato: NotificationLog
+    ) =>
+      origem.usuario === candidato.usuario &&
+      origem.chamado === candidato.chamado;
+
+    notificationLogs
+      .filter((log) => log.evento === "enviado")
+      .forEach((enviado) => {
+        const recebidos = notificationLogs
+          .filter(
+            (log) =>
+              log.evento === "recebido" &&
+              mesmasNotificacoes(enviado, log) &&
+              new Date(log.criado_em).getTime() >=
+                new Date(enviado.criado_em).getTime()
+          )
+          .sort(
+            (a, b) =>
+              new Date(a.criado_em).getTime() -
+              new Date(b.criado_em).getTime()
+          );
+
+        const abertos = notificationLogs
+          .filter(
+            (log) =>
+              log.evento === "aberto" &&
+              mesmasNotificacoes(enviado, log) &&
+              new Date(log.criado_em).getTime() >=
+                new Date(enviado.criado_em).getTime()
+          )
+          .sort(
+            (a, b) =>
+              new Date(a.criado_em).getTime() -
+              new Date(b.criado_em).getTime()
+          );
+
+        const recebido = recebidos[0];
+        const aberto = abertos[0];
+        usados.add(enviado.id);
+
+        if (recebido) {
+          usados.add(recebido.id);
+        }
+
+        if (aberto) {
+          usados.add(aberto.id);
+        }
+
+        linhas.push({ enviado, recebido: recebido || null, aberto: aberto || null });
+      });
+
+    notificationLogs.forEach((log) => {
+      if (!usados.has(log.id)) {
+        linhas.push({ enviado: log, recebido: null, aberto: null });
+      }
+    });
+
+    return linhas.sort(
+      (a, b) =>
+        new Date(b.enviado.criado_em).getTime() -
+        new Date(a.enviado.criado_em).getTime()
+    );
+  }, [notificationLogs]);
 
   const podeIniciarAtendimento =
     usuarioLogado?.perfil === "admin" || usuarioLogado?.perfil === "tecnico";
@@ -2378,26 +2452,26 @@ export default function Home() {
                     </div>
 
                     <div className="grid gap-3">
-                      {notificationLogs.map((item) => (
+                      {linhasNotificacao.map(({ enviado, recebido, aberto }) => (
                         <div
-                          key={item.id}
+                          key={enviado.id}
                           className="rounded-md border border-slate-700 bg-[#0F172A] p-4"
                         >
                           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                             <div>
                               <p className="font-semibold">
-                                {item.usuario_nome || "sem usuario"}
+                                {enviado.usuario_nome || "sem usuario"}
                               </p>
                               <p className="text-sm text-slate-400">
-                                {item.condominio_nome || "sem condominio"}
-                                {item.chamado_titulo
-                                  ? ` - ${item.chamado_titulo}`
+                                {enviado.condominio_nome || "sem condominio"}
+                                {enviado.chamado_titulo
+                                  ? ` - ${enviado.chamado_titulo}`
                                   : ""}
                               </p>
                             </div>
 
                             <div className="flex flex-wrap gap-2">
-                              {item.urgente && (
+                              {enviado.urgente && (
                                 <span className="rounded-full bg-red-500/20 px-3 py-1 text-sm font-medium text-red-300">
                                   urgente
                                 </span>
@@ -2405,27 +2479,49 @@ export default function Home() {
 
                               <span
                                 className={`rounded-full px-3 py-1 text-sm font-medium ${classeEventoNotificacao(
-                                  item.evento
+                                  recebido ? "recebido" : enviado.evento
                                 )}`}
                               >
-                                {textoEventoNotificacao(item.evento)}
+                                {recebido
+                                  ? "Recebido"
+                                  : textoEventoNotificacao(enviado.evento)}
                               </span>
                             </div>
                           </div>
 
                           <p className="text-sm text-slate-300">
-                            {item.titulo || "Notificacao"}{" "}
-                            {item.corpo ? `- ${item.corpo}` : ""}
+                            {enviado.titulo || "Notificacao"}{" "}
+                            {enviado.corpo ? `- ${enviado.corpo}` : ""}
                           </p>
 
-                          <p className="mt-3 text-sm text-slate-400">
-                            {formatarData(item.criado_em)} -{" "}
-                            {item.sistema || item.plataforma || "app"}
-                          </p>
+                          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-400">
+                            <span>
+                              Enviada {formatarData(enviado.criado_em)}
+                            </span>
+
+                            <span
+                              className={
+                                recebido
+                                  ? "text-emerald-300"
+                                  : "text-yellow-300"
+                              }
+                            >
+                              Recebida{" "}
+                              {recebido
+                                ? formatarData(recebido.criado_em)
+                                : "pendente"}
+                            </span>
+
+                            {aberto && (
+                              <span className="text-blue-300">
+                                Aberta {formatarData(aberto.criado_em)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
 
-                      {notificationLogs.length === 0 && (
+                      {linhasNotificacao.length === 0 && (
                         <p className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-sm text-slate-400">
                           Nenhuma notificacao registrada.
                         </p>
