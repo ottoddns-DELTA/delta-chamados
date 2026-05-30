@@ -1,7 +1,9 @@
 import os
 
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import Group, User
+from django.core.cache import cache
 import requests
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
@@ -75,6 +77,12 @@ def montar_detalhe_edicao_chamado(chamado, antes, depois):
         linhas.append(f'- {campo}: {depois.get(campo) or "-"}')
 
     return '\n'.join(linhas)
+
+
+def chave_rate_limit_login(request, username):
+    ip = get_client_ip(request) or 'sem-ip'
+    usuario = (username or 'sem-usuario').strip().lower()
+    return f'login-rate:{ip}:{usuario}'
 
 
 def melhorar_texto_local(texto):
@@ -231,6 +239,20 @@ class LoginView(APIView):
     def post(self, request):
         username = request.data.get('username', '')
         password = request.data.get('password', '')
+        chave_rate_limit = chave_rate_limit_login(request, username)
+        tentativas = cache.get(chave_rate_limit, 0)
+
+        if tentativas >= settings.LOGIN_RATE_LIMIT_ATTEMPTS:
+            return Response(
+                {
+                    'detail': (
+                        'Muitas tentativas de login. Aguarde alguns minutos '
+                        'e tente novamente.'
+                    )
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
         user = authenticate(
             request,
             username=username,
@@ -249,6 +271,11 @@ class LoginView(APIView):
         )
 
         if not user:
+            cache.set(
+                chave_rate_limit,
+                tentativas + 1,
+                settings.LOGIN_RATE_LIMIT_WINDOW,
+            )
             return Response(
                 {'detail': 'Usuário ou senha inválidos.'},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -260,6 +287,7 @@ class LoginView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        cache.delete(chave_rate_limit)
         token, _ = Token.objects.get_or_create(user=user)
 
         return Response({
