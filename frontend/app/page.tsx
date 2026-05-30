@@ -2848,14 +2848,14 @@ export default function Home() {
                         key={chamado.id}
                         title={`Aberto por: ${chamado.criado_por_nome || "nao informado"}`}
                         onClick={() => marcarVisualizado(chamado)}
-                        className={`relative rounded-lg border border-l-4 bg-[#1F2937] p-5 shadow-xl transition ${
+                        className={`relative rounded-lg border border-l-4 bg-[#1F2937] p-4 shadow-lg transition ${
                           aba === "historico" &&
                           chamadosSelecionadosPdf.includes(chamado.id)
                             ? "border-emerald-400/70 shadow-[0_0_0_1px_rgba(16,185,129,0.18),0_20px_40px_rgba(15,23,42,0.35)]"
                             : chamado.urgente
                               ? "border-slate-700/70 border-l-red-400/80"
                               : "border-slate-700/70 border-l-slate-600/70"
-                        } ${aba === "historico" ? "pb-16" : ""} ${
+                        } ${aba === "historico" ? "pb-12" : ""} ${
                           usuarioLogado?.perfil === "tecnico"
                             ? "cursor-pointer"
                             : ""
@@ -3037,27 +3037,27 @@ export default function Home() {
                           </div>
                         ) : (
                           <>
-                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                           <div className="min-w-0">
-                            <h2 className="text-2xl font-extrabold uppercase tracking-wide text-white sm:text-3xl">
+                            <h2 className="text-lg font-semibold uppercase tracking-wide text-white sm:text-xl">
                               {chamado.condominio_nome || chamado.condominio}
                             </h2>
 
-                            <p className="mt-1 text-base font-medium text-slate-300">
+                            <p className="mt-1 text-sm font-medium text-slate-300">
                               {chamado.titulo}
                             </p>
                           </div>
 
                           <div className="flex shrink-0 flex-wrap gap-2">
                             {chamado.urgente && (
-                              <span className="rounded-full border border-red-400/25 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-300">
+                              <span className="rounded-full border border-red-400/25 bg-red-500/15 px-2.5 py-1 text-[11px] font-semibold text-red-300">
                                 Urgente
                               </span>
                             )}
 
                             <span
                               className={`
-                              rounded-full border px-3 py-1 text-xs font-semibold
+                              rounded-full border px-2.5 py-1 text-[11px] font-semibold
                               ${
                                 chamado.status === "aberto"
                                   ? "border-yellow-400/20 bg-yellow-500/15 text-yellow-300"
@@ -3088,24 +3088,24 @@ export default function Home() {
                                 event.stopPropagation();
                                 copiarDescricaoResolucao(chamado);
                               }}
-                              className="mb-4 block w-full rounded-lg border border-emerald-300/25 bg-emerald-400/12 px-4 py-3 text-left text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-emerald-300/60 hover:bg-emerald-400/15"
+                              className="mb-3 block w-full rounded-lg border border-emerald-300/25 bg-emerald-400/12 px-3 py-2.5 text-left text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-emerald-300/60 hover:bg-emerald-400/15"
                               title="Clique para copiar o texto feito pelo tecnico"
                             >
-                              <span className="mb-1 flex items-center justify-between gap-3 text-xs font-bold uppercase tracking-wide text-emerald-300">
+                              <span className="mb-1 flex items-center justify-between gap-3 text-[11px] font-bold uppercase tracking-wide text-emerald-300">
                                 <span>Feito</span>
-                                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold normal-case tracking-normal text-emerald-200">
+                                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal text-emerald-200">
                                   {descricaoCopiadaId === chamado.id
                                     ? "Copiado"
                                     : "Copiar"}
                                 </span>
                               </span>
-                              <span className="block text-sm leading-6">
+                              <span className="block text-sm leading-5">
                                 {chamado.descricao_resolucao}
                               </span>
                             </button>
                           )}
 
-                        <p className="mb-4 text-sm leading-6 text-slate-200">
+                        <p className="mb-3 text-sm leading-5 text-slate-200">
                           {chamado.descricao}
                         </p>
 
@@ -3114,19 +3114,19 @@ export default function Home() {
                             href={chamado.imagem}
                             target="_blank"
                             rel="noreferrer"
-                            className="mb-5 block rounded-lg border border-slate-700 bg-[#0F172A] p-2"
+                            className="mb-4 block rounded-lg border border-slate-700 bg-[#0F172A] p-2"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={chamado.imagem}
                               alt="Imagem do chamado"
-                              className="max-h-72 w-full rounded-md object-contain"
+                              className="max-h-64 w-full rounded-md object-contain"
                             />
                           </a>
                         )}
 
-                        <div className="mt-5 flex flex-col gap-4 border-t border-slate-700/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] leading-5 text-slate-400">
+                        <div className="mt-4 flex flex-col gap-3 border-t border-slate-700/60 pt-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] leading-5 text-slate-400">
                             <span>
                               Aberto por{" "}
                               <strong className="font-semibold text-slate-300">
@@ -3134,14 +3134,6 @@ export default function Home() {
                               </strong>{" "}
                               em {formatarData(chamado.criado_em)}
                             </span>
-
-                            {chamado.editado_por_nome && (
-                              <span className="text-amber-200">
-                                Editado por{" "}
-                                <strong>{chamado.editado_por_nome}</strong> em{" "}
-                                {formatarData(chamado.atualizado_em)}
-                              </span>
-                            )}
 
                             {chamado.assumido_por_nome && (
                               <span className="text-blue-300">
@@ -3164,19 +3156,19 @@ export default function Home() {
                                   ? "font-semibold text-emerald-300"
                                   : chamado.recebido_em
                                     ? "font-semibold text-blue-300"
-                                    : "font-semibold text-yellow-300"
+                                    : "font-medium text-slate-500"
                               }
                             >
                               {statusRecebimento(chamado)}
                             </span>
                           </div>
 
-                          <div className="flex flex-wrap gap-3">
+                          <div className="flex flex-wrap gap-2">
                             {podeEditarChamado(chamado) && (
                               <button
                                 onClick={() => iniciarEdicao(chamado)}
                                 title="Editar chamado"
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-slate-600 text-slate-300 transition hover:border-slate-400 hover:bg-slate-800/70 hover:text-white"
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-600 text-slate-300 transition hover:border-slate-400 hover:bg-slate-800/70 hover:text-white"
                               >
                                 <svg
                                   className="h-5 w-5"
@@ -3199,7 +3191,7 @@ export default function Home() {
                                 onClick={() =>
                                   iniciarAtendimento(chamado.id)
                                 }
-                                className="rounded-md bg-blue-600 px-5 py-3 font-medium text-white transition hover:bg-blue-500"
+                                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-500"
                               >
                                 Iniciar atendimento
                               </button>
@@ -3208,7 +3200,7 @@ export default function Home() {
                             {chamado.status === "andamento" && (
                               <button
                                 onClick={() => abrirResolucao(chamado)}
-                                className="rounded-md bg-emerald-600 px-5 py-3 font-medium text-white transition hover:bg-emerald-500"
+                                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-500"
                               >
                                 Marcar como resolvido
                               </button>
@@ -3220,7 +3212,7 @@ export default function Home() {
                           <button
                             type="button"
                             onClick={() => alternarSelecaoPdf(chamado.id)}
-                            className={`absolute bottom-5 right-5 flex h-10 w-10 items-center justify-center rounded-full border transition ${
+                            className={`absolute bottom-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border transition ${
                               chamadosSelecionadosPdf.includes(chamado.id)
                                 ? "border-emerald-400 bg-emerald-500/20 text-emerald-100 shadow-[0_0_0_3px_rgba(16,185,129,0.10)]"
                                 : "border-slate-600 bg-[#0F172A]/95 text-slate-300 hover:border-emerald-400/70 hover:text-white"
