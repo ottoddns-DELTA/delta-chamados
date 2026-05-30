@@ -4,7 +4,7 @@ from .models import PushDevice
 
 EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send'
 CANAL_CHAMADOS = 'default'
-CANAL_URGENTES = 'urgent'
+CANAL_URGENTES = 'urgent-v2'
 SOM_URGENTE = 'urgent.wav'
 
 

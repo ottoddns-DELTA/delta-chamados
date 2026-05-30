@@ -36,7 +36,7 @@ const API_URL =
   (Constants.expoConfig?.extra?.apiUrl as string | undefined) ??
   "https://deltachamados.up.railway.app";
 const CANAL_CHAMADOS = "default";
-const CANAL_URGENTES = "urgent";
+const CANAL_URGENTES = "urgent-v2";
 const SOM_URGENTE = "urgent.wav";
 
 type Usuario = {
