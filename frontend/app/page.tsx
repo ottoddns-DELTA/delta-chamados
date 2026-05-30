@@ -2420,9 +2420,7 @@ export default function Home() {
 
                           <p className="mt-3 text-sm text-slate-400">
                             {formatarData(item.criado_em)} -{" "}
-                            {item.modelo || "modelo nao informado"}
-                            {item.fabricante ? ` (${item.fabricante})` : ""} -{" "}
-                            {item.sistema || item.plataforma || "sistema nao informado"}
+                            {item.sistema || item.plataforma || "app"}
                           </p>
                         </div>
                       ))}

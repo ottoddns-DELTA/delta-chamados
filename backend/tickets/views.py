@@ -653,6 +653,19 @@ class NotificationLogViewSet(viewsets.ModelViewSet):
         corpo = log_origem.corpo if log_origem else request.data.get('corpo', '')
         urgente = log_origem.urgente if log_origem else bool(request.data.get('urgente'))
 
+        if evento == 'recebido' and chamado:
+            notification_log = NotificationLog.objects.filter(
+                usuario=request.user,
+                chamado=chamado,
+                evento='recebido',
+            ).order_by('-criado_em').first()
+
+            if notification_log:
+                return Response(
+                    self.get_serializer(notification_log).data,
+                    status=status.HTTP_200_OK
+                )
+
         notification_log = NotificationLog.objects.create(
             usuario=request.user,
             device=device,

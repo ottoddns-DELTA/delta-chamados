@@ -165,7 +165,34 @@ export default function App() {
     }
 
     const data = (await response.json()) as Chamado[];
-    setChamados(data.filter((chamado) => chamado.status !== "resolvido"));
+    const chamadosAtivos = data.filter(
+      (chamado) => chamado.status !== "resolvido"
+    );
+    setChamados(chamadosAtivos);
+
+    chamadosAtivos.forEach((chamado) => {
+      const chave = `recebido-lista-${chamado.id}`;
+
+      if (eventosNotificacao.current.has(chave)) {
+        return;
+      }
+
+      eventosNotificacao.current.add(chave);
+
+      fetch(`${API_URL}/api/notification-logs/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Token ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          evento: "recebido",
+          chamado: chamado.id,
+          token: expoPushToken.current,
+          urgente: chamado.urgente,
+        }),
+      }).catch(() => undefined);
+    });
   }, [headers, token]);
 
   async function registrarPush(tokenAtual: string) {
@@ -227,9 +254,7 @@ export default function App() {
       body: JSON.stringify({
         token: expoToken.data,
         plataforma: "android",
-        modelo: Device.modelName || "",
-        fabricante: Device.manufacturer || "",
-        sistema: `${Device.osName || Platform.OS} ${Device.osVersion || ""}`,
+        sistema: Platform.OS,
       }),
     });
 
