@@ -2848,11 +2848,13 @@ export default function Home() {
                         key={chamado.id}
                         title={`Aberto por: ${chamado.criado_por_nome || "nao informado"}`}
                         onClick={() => marcarVisualizado(chamado)}
-                        className={`relative rounded-lg border bg-[#1F2937] p-5 shadow-xl transition ${
+                        className={`relative rounded-lg border border-l-4 bg-[#1F2937] p-5 shadow-xl transition ${
                           aba === "historico" &&
                           chamadosSelecionadosPdf.includes(chamado.id)
                             ? "border-emerald-400/70 shadow-[0_0_0_1px_rgba(16,185,129,0.18),0_20px_40px_rgba(15,23,42,0.35)]"
-                            : "border-slate-700/70"
+                            : chamado.urgente
+                              ? "border-slate-700/70 border-l-red-400/80"
+                              : "border-slate-700/70 border-l-slate-600/70"
                         } ${aba === "historico" ? "pb-16" : ""} ${
                           usuarioLogado?.perfil === "tecnico"
                             ? "cursor-pointer"
@@ -3035,40 +3037,40 @@ export default function Home() {
                           </div>
                         ) : (
                           <>
-                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <p className="mb-2 inline-flex rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-blue-200">
+                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <h2 className="text-2xl font-extrabold uppercase tracking-wide text-white sm:text-3xl">
                               {chamado.condominio_nome || chamado.condominio}
-                            </p>
-
-                            <h2 className="text-xl font-semibold">
-                              {chamado.titulo}
                             </h2>
+
+                            <p className="mt-1 text-base font-medium text-slate-300">
+                              {chamado.titulo}
+                            </p>
                           </div>
 
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex shrink-0 flex-wrap gap-2">
                             {chamado.urgente && (
-                              <span className="rounded-full bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400">
+                              <span className="rounded-full border border-red-400/25 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-300">
                                 Urgente
                               </span>
                             )}
 
                             <span
                               className={`
-                              rounded-full px-4 py-2 text-sm font-medium
+                              rounded-full border px-3 py-1 text-xs font-semibold
                               ${
                                 chamado.status === "aberto"
-                                  ? "bg-yellow-500/20 text-yellow-400"
+                                  ? "border-yellow-400/20 bg-yellow-500/15 text-yellow-300"
                                   : ""
                               }
                               ${
                                 chamado.status === "andamento"
-                                  ? "bg-blue-500/20 text-blue-400"
+                                  ? "border-blue-400/20 bg-blue-500/15 text-blue-300"
                                   : ""
                               }
                               ${
                                 chamado.status === "resolvido"
-                                  ? "bg-green-500/20 text-green-400"
+                                  ? "border-emerald-400/20 bg-emerald-500/15 text-emerald-300"
                                   : ""
                               }
                             `}
@@ -3086,19 +3088,19 @@ export default function Home() {
                                 event.stopPropagation();
                                 copiarDescricaoResolucao(chamado);
                               }}
-                              className="mb-4 block w-full rounded-lg border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-left text-slate-100 transition hover:border-emerald-400/60 hover:bg-emerald-500/15"
+                              className="mb-4 block w-full rounded-lg border border-emerald-300/25 bg-emerald-400/12 px-4 py-3 text-left text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-emerald-300/60 hover:bg-emerald-400/15"
                               title="Clique para copiar o texto feito pelo tecnico"
                             >
-                              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-emerald-300">
-                                Feito
+                              <span className="mb-1 flex items-center justify-between gap-3 text-xs font-bold uppercase tracking-wide text-emerald-300">
+                                <span>Feito</span>
+                                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold normal-case tracking-normal text-emerald-200">
+                                  {descricaoCopiadaId === chamado.id
+                                    ? "Copiado"
+                                    : "Copiar"}
+                                </span>
                               </span>
-                              <span className="text-sm leading-6">
+                              <span className="block text-sm leading-6">
                                 {chamado.descricao_resolucao}
-                              </span>
-                              <span className="ml-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-200">
-                                {descricaoCopiadaId === chamado.id
-                                  ? "Copiado"
-                                  : "Copiar"}
                               </span>
                             </button>
                           )}
@@ -3123,18 +3125,40 @@ export default function Home() {
                           </a>
                         )}
 
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="text-xs leading-5 text-slate-400">
-                            <p>
-                              Aberto por:{" "}
-                              {chamado.criado_por_nome || "nao informado"}
-                            </p>
+                        <div className="mt-5 flex flex-col gap-4 border-t border-slate-700/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] leading-5 text-slate-400">
+                            <span>
+                              Aberto por{" "}
+                              <strong className="font-semibold text-slate-300">
+                                {chamado.criado_por_nome || "nao informado"}
+                              </strong>{" "}
+                              em {formatarData(chamado.criado_em)}
+                            </span>
 
-                            <p>
-                              Aberto em: {formatarData(chamado.criado_em)}
-                            </p>
+                            {chamado.editado_por_nome && (
+                              <span className="text-amber-200">
+                                Editado por{" "}
+                                <strong>{chamado.editado_por_nome}</strong> em{" "}
+                                {formatarData(chamado.atualizado_em)}
+                              </span>
+                            )}
 
-                            <p
+                            {chamado.assumido_por_nome && (
+                              <span className="text-blue-300">
+                                Assumido por{" "}
+                                <strong>{chamado.assumido_por_nome}</strong>
+                              </span>
+                            )}
+
+                            {chamado.status === "resolvido" &&
+                              chamado.resolvido_em && (
+                                <span>
+                                  Resolvido em{" "}
+                                  {formatarData(chamado.resolvido_em)}
+                                </span>
+                              )}
+
+                            <span
                               className={
                                 chamado.visualizado_em
                                   ? "font-semibold text-emerald-300"
@@ -3144,36 +3168,7 @@ export default function Home() {
                               }
                             >
                               {statusRecebimento(chamado)}
-                            </p>
-
-                            {chamado.editado_por_nome && (
-                              <p className="font-semibold text-amber-200">
-                                Editado por: {chamado.editado_por_nome} em{" "}
-                                {formatarData(chamado.atualizado_em)}
-                              </p>
-                            )}
-
-                            {chamado.assumido_por_nome && (
-                              <p className="font-semibold text-blue-300">
-                                Assumido por: {chamado.assumido_por_nome}
-                              </p>
-                            )}
-
-                            {chamado.status === "resolvido" &&
-                              chamado.resolvido_em && (
-                                <p>
-                                  Resolvido em:{" "}
-                                  {formatarData(chamado.resolvido_em)}
-                                </p>
-                              )}
-
-                            {chamado.urgente ? (
-                              <p className="font-semibold text-red-400">
-                                Urgente
-                              </p>
-                            ) : (
-                              <p className="text-slate-400">Normal</p>
-                            )}
+                            </span>
                           </div>
 
                           <div className="flex flex-wrap gap-3">
