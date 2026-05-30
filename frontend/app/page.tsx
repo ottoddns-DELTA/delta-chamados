@@ -1281,24 +1281,35 @@ export default function Home() {
 
         <div className="flex-1 bg-[#0F172A] p-5 sm:p-8 lg:p-10">
           <div className="mx-auto max-w-5xl">
-            <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h1 className="mb-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+                <h1 className="mb-1 text-2xl font-bold tracking-tight text-white sm:text-3xl">
                   Delta Chamados
                 </h1>
-                <p className="text-slate-400">
+                <p className="text-sm text-slate-400">
                   Gestão técnica de ocorrências
                   {usuarioLogado && ` - ${usuarioLogado.perfil}`}
                 </p>
               </div>
 
-              <button
-                onClick={sair}
-                title="Sair"
-                className="hidden rounded-md border border-slate-700 bg-[#111827] px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-slate-500 hover:text-white lg:block"
-              >
-                {perfilLabel} [{inicialUsuario}]
-              </button>
+              <div className="hidden min-w-44 overflow-hidden rounded-md border border-slate-700 bg-[#111827] shadow-xl shadow-black/20 lg:block">
+                <div className="border-b border-slate-800 px-4 py-3">
+                  <p className="text-sm font-semibold text-white">
+                    {perfilLabel} [{inicialUsuario}]
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {usuarioLogado?.username}
+                  </p>
+                </div>
+
+                <button
+                  onClick={sair}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-200 transition hover:bg-white hover:text-slate-950"
+                >
+                  <span aria-hidden="true">↪</span>
+                  Sair
+                </button>
+              </div>
             </div>
 
             {aba === "condominios" && (
