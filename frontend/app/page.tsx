@@ -212,6 +212,7 @@ export default function Home() {
   const [erroLogin, setErroLogin] = useState("");
   const [mensagemPopup, setMensagemPopup] = useState("");
   const [melhorandoTexto, setMelhorandoTexto] = useState(false);
+  const [menuUsuarioAberto, setMenuUsuarioAberto] = useState(false);
 
   const [aba, setAba] = useState<Aba>("chamados");
   const [abaAdmin, setAbaAdmin] = useState<AbaAdmin>("usuarios");
@@ -1292,15 +1293,22 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="group relative hidden lg:block">
+              <div
+                className="relative hidden lg:block"
+                onMouseEnter={() => setMenuUsuarioAberto(true)}
+                onMouseLeave={() => setMenuUsuarioAberto(false)}
+              >
                 <button
                   type="button"
-                  className="flex items-center gap-3 rounded-lg border border-blue-400/50 bg-blue-600/20 px-4 py-3 text-left shadow-xl shadow-black/20 transition hover:border-blue-300 hover:bg-blue-500/25"
+                  onClick={() =>
+                    setMenuUsuarioAberto((menuAberto) => !menuAberto)
+                  }
+                  className="flex items-center gap-2 rounded-md border border-blue-400/45 bg-blue-600/15 px-3 py-2 text-left shadow-lg shadow-black/10 transition hover:border-blue-300 hover:bg-blue-500/20"
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-blue-700">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-blue-700">
                     <svg
                       aria-hidden="true"
-                      className="h-5 w-5"
+                      className="h-4 w-4"
                       fill="currentColor"
                       viewBox="0 0 24 24"
                     >
@@ -1309,21 +1317,27 @@ export default function Home() {
                   </span>
 
                   <span>
-                    <span className="block text-sm font-semibold text-white">
+                    <span className="block text-xs font-semibold text-white">
                       {perfilLabel} [{inicialUsuario}]
                     </span>
-                    <span className="block text-xs text-blue-100/80">
+                    <span className="block max-w-28 truncate text-[11px] text-blue-100/75">
                       {usuarioLogado?.username}
                     </span>
                   </span>
                 </button>
 
-                <div className="invisible absolute right-0 top-full z-20 mt-2 w-44 translate-y-1 rounded-lg border border-slate-700 bg-white py-1 text-slate-950 opacity-0 shadow-2xl shadow-black/30 transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                <div
+                  className={`absolute right-0 top-[calc(100%-1px)] z-20 w-36 rounded-md border border-slate-200 bg-white py-1 text-slate-950 shadow-2xl shadow-black/30 transition ${
+                    menuUsuarioAberto
+                      ? "visible translate-y-0 opacity-100"
+                      : "invisible -translate-y-1 opacity-0"
+                  }`}
+                >
                   <button
                     onClick={sair}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold transition hover:bg-slate-100"
+                    className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-semibold transition hover:bg-slate-100"
                   >
-                    <span aria-hidden="true" className="text-lg leading-none">
+                    <span aria-hidden="true" className="text-base leading-none">
                       ↪
                     </span>
                     Sair
