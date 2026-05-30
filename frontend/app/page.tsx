@@ -1292,23 +1292,43 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="hidden min-w-44 overflow-hidden rounded-md border border-slate-700 bg-[#111827] shadow-xl shadow-black/20 lg:block">
-                <div className="border-b border-slate-800 px-4 py-3">
-                  <p className="text-sm font-semibold text-white">
-                    {perfilLabel} [{inicialUsuario}]
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {usuarioLogado?.username}
-                  </p>
-                </div>
-
+              <div className="group relative hidden lg:block">
                 <button
-                  onClick={sair}
-                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-200 transition hover:bg-white hover:text-slate-950"
+                  type="button"
+                  className="flex items-center gap-3 rounded-lg border border-blue-400/50 bg-blue-600/20 px-4 py-3 text-left shadow-xl shadow-black/20 transition hover:border-blue-300 hover:bg-blue-500/25"
                 >
-                  <span aria-hidden="true">↪</span>
-                  Sair
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-blue-700">
+                    <svg
+                      aria-hidden="true"
+                      className="h-5 w-5"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M12 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4Zm0 2c-3.3 0-6 1.8-6 4v1h12v-1c0-2.2-2.7-4-6-4Z" />
+                    </svg>
+                  </span>
+
+                  <span>
+                    <span className="block text-sm font-semibold text-white">
+                      {perfilLabel} [{inicialUsuario}]
+                    </span>
+                    <span className="block text-xs text-blue-100/80">
+                      {usuarioLogado?.username}
+                    </span>
+                  </span>
                 </button>
+
+                <div className="invisible absolute right-0 top-full z-20 mt-2 w-44 translate-y-1 rounded-lg border border-slate-700 bg-white py-1 text-slate-950 opacity-0 shadow-2xl shadow-black/30 transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                  <button
+                    onClick={sair}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold transition hover:bg-slate-100"
+                  >
+                    <span aria-hidden="true" className="text-lg leading-none">
+                      ↪
+                    </span>
+                    Sair
+                  </button>
+                </div>
               </div>
             </div>
 
