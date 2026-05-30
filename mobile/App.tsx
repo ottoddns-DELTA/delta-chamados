@@ -50,6 +50,7 @@ type Chamado = {
   descricao_resolucao?: string;
   condominio_nome?: string;
   criado_por_nome?: string;
+  assumido_por_nome?: string;
   condominio: number;
   imagem?: string | null;
   urgente: boolean;
@@ -665,6 +666,11 @@ export default function App() {
             <Text style={styles.openedBy}>
               Aberto em: {formatarData(item.criado_em)}
             </Text>
+            {item.assumido_por_nome ? (
+              <Text style={styles.assumedBy}>
+                Assumido por: {item.assumido_por_nome}
+              </Text>
+            ) : null}
             {item.resolvido_em ? (
               <Text style={styles.openedBy}>
                 Resolvido em: {formatarData(item.resolvido_em)}
@@ -901,6 +907,12 @@ const styles = StyleSheet.create({
   openedBy: {
     color: "#71717a",
     fontSize: 13,
+    marginTop: 4,
+  },
+  assumedBy: {
+    color: "#93c5fd",
+    fontSize: 13,
+    fontWeight: "700",
     marginTop: 4,
   },
   description: {

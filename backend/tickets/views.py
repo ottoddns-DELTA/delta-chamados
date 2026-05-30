@@ -18,7 +18,7 @@ from .permissions import (
     PerfilChamadoPermission,
     PerfilCondominioPermission,
 )
-from .push import enviar_push_novo_chamado
+from .push import enviar_push_chamado_atualizado, enviar_push_novo_chamado
 from .serializers import (
     AccessLogSerializer,
     ActionLogSerializer,
@@ -252,6 +252,7 @@ class ChamadoViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         novo_status = self.request.data.get('status')
+        status_anterior = serializer.instance.status
 
         if (
             perfil_usuario(self.request.user) == MONITORAMENTO
@@ -261,12 +262,36 @@ class ChamadoViewSet(viewsets.ModelViewSet):
                 'Monitoramento nao pode iniciar atendimento.'
             )
 
-        chamado = serializer.save()
+        campos_extras = {}
+
+        if novo_status == 'andamento' and status_anterior != 'andamento':
+            campos_extras['assumido_por'] = self.request.user
+
+        if novo_status == 'aberto':
+            campos_extras['assumido_por'] = None
+
+        chamado = serializer.save(**campos_extras)
         registrar_acao(
             self.request,
             'editou_chamado',
             f'Chamado #{chamado.id}: {chamado.titulo}',
         )
+
+        if novo_status == 'andamento' and status_anterior != 'andamento':
+            usuario = self.request.user.get_full_name() or self.request.user.username
+            enviar_push_chamado_atualizado(
+                chamado,
+                'Chamado assumido',
+                f'{usuario} assumiu: {chamado.titulo}',
+            )
+
+        if novo_status == 'resolvido' and status_anterior != 'resolvido':
+            usuario = self.request.user.get_full_name() or self.request.user.username
+            enviar_push_chamado_atualizado(
+                chamado,
+                'Chamado resolvido',
+                f'{usuario} resolveu: {chamado.titulo}',
+            )
 
 
 class CondominioViewSet(viewsets.ModelViewSet):

@@ -41,3 +41,38 @@ def enviar_push_novo_chamado(chamado):
         )
     except requests.RequestException:
         pass
+
+
+def enviar_push_chamado_atualizado(chamado, titulo, corpo):
+    dispositivos = list(
+        PushDevice.objects.select_related('usuario').filter(
+            ativo=True,
+            usuario__is_active=True,
+        )
+    )
+
+    if not dispositivos:
+        return
+
+    mensagens = [
+        {
+            'to': dispositivo.token,
+            'sound': 'default',
+            'title': titulo,
+            'body': corpo,
+            'data': {
+                'chamadoId': chamado.id,
+                'status': chamado.status,
+            },
+        }
+        for dispositivo in dispositivos
+    ]
+
+    try:
+        requests.post(
+            EXPO_PUSH_URL,
+            json=mensagens,
+            timeout=10,
+        )
+    except requests.RequestException:
+        pass

@@ -32,6 +32,7 @@ type Chamado = {
   condominio: number;
   condominio_nome?: string;
   criado_por_nome?: string;
+  assumido_por_nome?: string;
   urgente: boolean;
   imagem?: string | null;
   status: "aberto" | "andamento" | "resolvido";
@@ -2061,6 +2062,12 @@ export default function Home() {
                             <p>
                               Aberto em: {formatarData(chamado.criado_em)}
                             </p>
+
+                            {chamado.assumido_por_nome && (
+                              <p className="font-semibold text-blue-300">
+                                Assumido por: {chamado.assumido_por_nome}
+                              </p>
+                            )}
 
                             {chamado.status === "resolvido" &&
                               chamado.resolvido_em && (
