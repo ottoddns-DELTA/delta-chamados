@@ -1327,19 +1327,75 @@ export default function Home() {
                 </button>
 
                 <div
-                  className={`absolute right-0 top-[calc(100%-1px)] z-20 w-36 rounded-md border border-slate-200 bg-white py-1 text-slate-950 shadow-2xl shadow-black/30 transition ${
+                  className={`absolute right-0 top-[calc(100%-1px)] z-20 w-56 overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-950 shadow-2xl shadow-black/30 transition ${
                     menuUsuarioAberto
                       ? "visible translate-y-0 opacity-100"
                       : "invisible -translate-y-1 opacity-0"
                   }`}
                 >
+                  <div className="border-b border-slate-200 px-5 py-4 text-center">
+                    <p className="text-base font-bold tracking-tight text-slate-900">
+                      {usuarioLogado?.username}
+                    </p>
+                    <p className="mt-1 text-xs font-medium uppercase text-slate-400">
+                      {perfilLabel}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      className="h-5 w-5 text-slate-600"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M12 17v.01" />
+                      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                      <rect height="10" rx="2" width="14" x="5" y="11" />
+                    </svg>
+                    Alterar Senha
+                  </button>
+
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      className="h-5 w-5 text-slate-600"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M21 14.5A7.5 7.5 0 0 1 9.5 3a8.5 8.5 0 1 0 11.5 11.5Z" />
+                    </svg>
+                    Modo Noturno
+                  </button>
+
                   <button
                     onClick={sair}
-                    className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-semibold transition hover:bg-slate-100"
+                    className="flex w-full items-center gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 text-left text-sm font-bold text-slate-700 transition hover:bg-slate-100"
                   >
-                    <span aria-hidden="true" className="text-base leading-none">
-                      ↪
-                    </span>
+                    <svg
+                      aria-hidden="true"
+                      className="h-5 w-5 text-slate-700"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <path d="m16 17 5-5-5-5" />
+                      <path d="M21 12H9" />
+                    </svg>
                     Sair
                   </button>
                 </div>
