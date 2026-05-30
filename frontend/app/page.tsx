@@ -1095,6 +1095,8 @@ export default function Home() {
     localStorage.setItem("delta-user", JSON.stringify(data.user));
     setToken(data.token);
     setUsuarioLogado(data.user);
+    setAba("chamados");
+    setAbaAdmin("usuarios");
     setLogado(true);
     setErroLogin("");
     setSenha("");
@@ -1110,6 +1112,8 @@ export default function Home() {
     setUsuario("");
     setSenha("");
     setErroLogin("");
+    setAba("chamados");
+    setAbaAdmin("usuarios");
   }
 
   function abrirModalSenha() {
