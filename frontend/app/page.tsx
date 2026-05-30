@@ -17,7 +17,7 @@ type Aba =
   | "historico"
   | "condominios"
   | "admin";
-type AbaAdmin = "usuarios" | "logs";
+type AbaAdmin = "usuarios" | "accessLogs" | "actionLogs";
 
 type Condominio = {
   id: number;
@@ -1435,8 +1435,6 @@ export default function Home() {
                     ativo={aba === "admin"}
                     icone="settings"
                     label="Administração"
-                    contador={1}
-                    corContador="bg-slate-600 text-white"
                     onClick={() => {
                       setAba("admin");
                       carregarAdmin();
@@ -1685,7 +1683,7 @@ export default function Home() {
                     Administração
                   </h2>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3 sm:grid-cols-3">
                     <button
                       onClick={() => {
                         setAbaAdmin("usuarios");
@@ -1702,16 +1700,30 @@ export default function Home() {
 
                     <button
                       onClick={() => {
-                        setAbaAdmin("logs");
+                        setAbaAdmin("accessLogs");
                         carregarAdmin();
                       }}
                       className={`rounded-md p-3 text-left font-semibold transition ${
-                        abaAdmin === "logs"
+                        abaAdmin === "accessLogs"
                           ? "bg-white text-black"
                           : "bg-[#1F2937] text-slate-200 hover:bg-slate-700"
                       }`}
                     >
-                      Logs e auditoria
+                      Logs de acesso
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setAbaAdmin("actionLogs");
+                        carregarAdmin();
+                      }}
+                      className={`rounded-md p-3 text-left font-semibold transition ${
+                        abaAdmin === "actionLogs"
+                          ? "bg-white text-black"
+                          : "bg-[#1F2937] text-slate-200 hover:bg-slate-700"
+                      }`}
+                    >
+                      Logs gerais
                     </button>
                   </div>
                 </div>
@@ -1882,11 +1894,11 @@ export default function Home() {
                   </>
                 )}
 
-                {abaAdmin === "logs" && (
+                {abaAdmin === "actionLogs" && (
                   <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-xl">
                     <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <h2 className="text-2xl font-semibold">
-                        Logs e auditoria
+                        Logs gerais
                       </h2>
 
                       <button
@@ -1896,11 +1908,6 @@ export default function Home() {
                         Atualizar
                       </button>
                     </div>
-
-                    <div className="mb-6">
-                      <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        Alteracoes no sistema
-                      </h3>
 
                       <div className="grid gap-3">
                         {actionLogs.map((item) => (
@@ -1934,13 +1941,23 @@ export default function Home() {
                           </p>
                         )}
                       </div>
+                  </div>
+                )}
+
+                {abaAdmin === "accessLogs" && (
+                  <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-xl">
+                    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <h2 className="text-2xl font-semibold">
+                        Logs de acesso
+                      </h2>
+
+                      <button
+                        onClick={carregarAdmin}
+                        className="rounded-md border border-slate-600 px-4 py-3 text-sm font-medium text-slate-300 transition hover:border-slate-400 hover:text-white"
+                      >
+                        Atualizar
+                      </button>
                     </div>
-
-                    <div>
-                      <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        Acessos
-                      </h3>
-
                       <div className="grid gap-3">
                         {accessLogs.map((item) => (
                           <div
@@ -1967,7 +1984,6 @@ export default function Home() {
                           </div>
                         ))}
                       </div>
-                    </div>
                   </div>
                 )}
               </div>
