@@ -2855,7 +2855,7 @@ export default function Home() {
                             : chamado.urgente
                               ? "border-slate-700/70 border-l-red-400/80"
                               : "border-slate-700/70 border-l-slate-600/70"
-                        } ${aba === "historico" ? "pb-12" : ""} ${
+                        } ${aba === "historico" ? "pb-4" : ""} ${
                           usuarioLogado?.perfil === "tecnico"
                             ? "cursor-pointer"
                             : ""
@@ -3150,20 +3150,9 @@ export default function Home() {
                                 </span>
                               )}
 
-                            <span
-                              className={
-                                chamado.visualizado_em
-                                  ? "font-semibold text-emerald-300"
-                                  : chamado.recebido_em
-                                    ? "font-semibold text-blue-300"
-                                    : "font-medium text-slate-500"
-                              }
-                            >
-                              {statusRecebimento(chamado)}
-                            </span>
                           </div>
 
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex shrink-0 flex-wrap items-center gap-2">
                             {podeEditarChamado(chamado) && (
                               <button
                                 onClick={() => iniciarEdicao(chamado)}
@@ -3182,6 +3171,30 @@ export default function Home() {
                                   <path d="M12 20h9" />
                                   <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
                                 </svg>
+                              </button>
+                            )}
+
+                            {aba === "historico" && (
+                              <button
+                                type="button"
+                                onClick={() => alternarSelecaoPdf(chamado.id)}
+                                className={`inline-flex h-9 w-9 items-center justify-center rounded-md border transition ${
+                                  chamadosSelecionadosPdf.includes(chamado.id)
+                                    ? "border-emerald-400 bg-emerald-500/20 text-emerald-100 shadow-[0_0_0_3px_rgba(16,185,129,0.10)]"
+                                    : "border-slate-600 bg-[#0F172A]/60 text-slate-300 hover:border-emerald-400/70 hover:text-white"
+                                }`}
+                                title="Selecionar para exportar"
+                                aria-label="Selecionar chamado para exportar"
+                              >
+                                <span
+                                  className={`flex h-4 w-4 items-center justify-center rounded border ${
+                                    chamadosSelecionadosPdf.includes(
+                                      chamado.id
+                                    )
+                                      ? "border-emerald-300 bg-emerald-500"
+                                      : "border-slate-500"
+                                  }`}
+                                />
                               </button>
                             )}
 
@@ -3212,7 +3225,7 @@ export default function Home() {
                           <button
                             type="button"
                             onClick={() => alternarSelecaoPdf(chamado.id)}
-                            className={`absolute bottom-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border transition ${
+                            className={`hidden ${
                               chamadosSelecionadosPdf.includes(chamado.id)
                                 ? "border-emerald-400 bg-emerald-500/20 text-emerald-100 shadow-[0_0_0_3px_rgba(16,185,129,0.10)]"
                                 : "border-slate-600 bg-[#0F172A]/95 text-slate-300 hover:border-emerald-400/70 hover:text-white"
