@@ -926,7 +926,7 @@ export default function Home() {
 
   if (!logado) {
     return (
-      <main className="min-h-screen bg-zinc-950 text-white">
+      <main className="min-h-screen bg-[#0F172A] text-white">
         <div className="grid min-h-screen lg:grid-cols-[1.1fr_0.9fr]">
           <section className="flex items-center px-6 py-10 sm:px-10 lg:px-16">
             <div className="w-full max-w-md">
@@ -938,14 +938,14 @@ export default function Home() {
                 Acesso ao painel
               </h1>
 
-              <p className="mb-8 text-base leading-7 text-zinc-400">
+              <p className="mb-8 text-base leading-7 text-slate-400">
                 Entre para acompanhar chamados, condomínios e atendimentos em
                 andamento.
               </p>
 
-              <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
+              <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-2xl">
                 <div className="grid gap-4">
-                  <label className="grid gap-2 text-sm font-medium text-zinc-300">
+                  <label className="grid gap-2 text-sm font-medium text-slate-300">
                     Usuário
                     <input
                       type="text"
@@ -956,12 +956,12 @@ export default function Home() {
                           entrar();
                         }
                       }}
-                      className="rounded-md border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none transition focus:border-blue-400"
+                      className="rounded-md border border-slate-700 bg-[#0F172A] px-4 py-3 text-white outline-none transition focus:border-emerald-500"
                       placeholder="Digite seu usuário"
                     />
                   </label>
 
-                  <label className="grid gap-2 text-sm font-medium text-zinc-300">
+                  <label className="grid gap-2 text-sm font-medium text-slate-300">
                     Senha
                     <input
                       type="password"
@@ -972,7 +972,7 @@ export default function Home() {
                           entrar();
                         }
                       }}
-                      className="rounded-md border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none transition focus:border-blue-400"
+                      className="rounded-md border border-slate-700 bg-[#0F172A] px-4 py-3 text-white outline-none transition focus:border-emerald-500"
                       placeholder="Digite sua senha"
                     />
                   </label>
@@ -985,7 +985,7 @@ export default function Home() {
 
                   <button
                     onClick={entrar}
-                    className="rounded-md bg-white px-4 py-3 font-semibold text-black transition hover:bg-zinc-200"
+                    className="rounded-md bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-500"
                   >
                     Entrar
                   </button>
@@ -994,7 +994,7 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="hidden border-l border-zinc-800 bg-zinc-900 lg:block">
+          <section className="hidden border-l border-slate-800 bg-[#111827] lg:block">
             <div className="flex h-full flex-col justify-between p-12">
               <div>
                 <div className="mb-8 h-12 w-12 rounded-lg bg-blue-500" />
@@ -1003,11 +1003,11 @@ export default function Home() {
                 </h2>
               </div>
 
-              <div className="grid gap-4 text-sm text-zinc-400">
-                <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-5">
+              <div className="grid gap-4 text-sm text-slate-400">
+                <div className="rounded-lg border border-slate-700 bg-[#0F172A] p-5">
                   Chamados abertos, urgentes e resolvidos em um só painel.
                 </div>
-                <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-5">
+                <div className="rounded-lg border border-slate-700 bg-[#0F172A] p-5">
                   Registro com descrição, condomínio e foto da ocorrência.
                 </div>
               </div>
@@ -1028,9 +1028,9 @@ export default function Home() {
 
       {resolvendoChamadoId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-lg rounded-lg border border-zinc-800 bg-zinc-950 p-6 shadow-2xl">
+          <div className="w-full max-w-lg rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-2xl">
             <h2 className="mb-3 text-2xl font-semibold">Resolver chamado</h2>
-            <p className="mb-4 text-sm text-zinc-400">
+            <p className="mb-4 text-sm text-slate-400">
               Descreva brevemente o que foi feito no atendimento.
             </p>
 
@@ -1038,7 +1038,7 @@ export default function Home() {
               value={descricaoResolucao}
               onChange={(event) => setDescricaoResolucao(event.target.value)}
               placeholder="Ex: Foi realizada a troca da lampada e testado o funcionamento."
-              className="min-h-32 w-full rounded-md border border-zinc-800 bg-black p-4 text-white outline-none transition focus:border-green-500"
+              className="min-h-32 w-full rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
             />
 
             <div className="mt-4 flex flex-wrap gap-3">
@@ -1063,7 +1063,7 @@ export default function Home() {
 
               <button
                 onClick={cancelarResolucao}
-                className="rounded-md border border-zinc-700 px-5 py-3 font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                className="rounded-md border border-slate-600 px-5 py-3 font-medium text-slate-300 transition hover:border-slate-400 hover:text-white"
               >
                 Cancelar
               </button>
@@ -1088,7 +1088,7 @@ export default function Home() {
 
             <button
               onClick={sair}
-              className="rounded-md border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white lg:hidden"
+              className="rounded-md border border-slate-600 px-3 py-2 text-sm font-medium text-slate-300 transition hover:border-slate-400 hover:text-white lg:hidden"
             >
               Sair
             </button>
@@ -1224,7 +1224,7 @@ export default function Home() {
             {aba === "condominios" && (
               <>
                 {podeGerenciarCondominios && (
-                <div className="mb-8 rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
+                <div className="mb-8 rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-2xl">
                   <h2 className="mb-5 text-2xl font-semibold">
                     Cadastrar Condomínio
                   </h2>
@@ -1237,7 +1237,7 @@ export default function Home() {
                       onChange={(event) =>
                         setNomeCondominio(event.target.value)
                       }
-                      className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                      className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
                     />
 
                     <input
@@ -1247,12 +1247,12 @@ export default function Home() {
                       onChange={(event) =>
                         setEnderecoCondominio(event.target.value)
                       }
-                      className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                      className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
                     />
 
                     <button
                       onClick={cadastrarCondominio}
-                      className="rounded-md bg-blue-600 p-4 font-semibold text-white transition hover:bg-blue-700"
+                      className="rounded-md bg-emerald-600 p-4 font-semibold text-white transition hover:bg-emerald-500"
                     >
                       Cadastrar Condomínio
                     </button>
@@ -1264,7 +1264,7 @@ export default function Home() {
                   {condominios.map((item) => (
                     <div
                       key={item.id}
-                      className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-xl"
+                      className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-xl"
                     >
                       {editandoCondominioId === item.id ? (
                         <div className="grid gap-4">
@@ -1274,7 +1274,7 @@ export default function Home() {
                             onChange={(event) =>
                               setEdicaoCondominioNome(event.target.value)
                             }
-                            className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                            className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
                           />
 
                           <input
@@ -1283,20 +1283,20 @@ export default function Home() {
                             onChange={(event) =>
                               setEdicaoCondominioEndereco(event.target.value)
                             }
-                            className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                            className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
                           />
 
                           <div className="flex flex-wrap gap-3">
                             <button
                               onClick={() => salvarEdicaoCondominio(item.id)}
-                              className="rounded-md bg-white px-5 py-3 font-semibold text-black transition hover:bg-zinc-200"
+                              className="rounded-md bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-500"
                             >
                               Salvar
                             </button>
 
                             <button
                               onClick={cancelarEdicaoCondominio}
-                              className="rounded-md border border-zinc-700 px-5 py-3 font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                              className="rounded-md border border-slate-600 px-5 py-3 font-medium text-slate-300 transition hover:border-slate-400 hover:text-white"
                             >
                               Cancelar
                             </button>
@@ -1310,7 +1310,7 @@ export default function Home() {
                                 {item.nome}
                               </h2>
 
-                              <p className="text-zinc-400">{item.endereco}</p>
+                              <p className="text-slate-400">{item.endereco}</p>
                             </div>
 
                             {podeGerenciarCondominios && (
@@ -1319,7 +1319,7 @@ export default function Home() {
                                   onClick={() =>
                                     iniciarEdicaoCondominio(item)
                                   }
-                                  className="rounded-md border border-zinc-700 px-5 py-3 font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                                  className="rounded-md border border-slate-600 px-5 py-3 font-medium text-slate-300 transition hover:border-slate-400 hover:text-white"
                                 >
                                   Editar
                                 </button>
@@ -1359,7 +1359,7 @@ export default function Home() {
                       className={`rounded-md p-3 text-left font-semibold transition ${
                         abaAdmin === "usuarios"
                           ? "bg-white text-black"
-                          : "bg-zinc-900 text-white hover:bg-zinc-800"
+                          : "bg-[#1F2937] text-slate-200 hover:bg-slate-700"
                       }`}
                     >
                       Usuários
@@ -1373,7 +1373,7 @@ export default function Home() {
                       className={`rounded-md p-3 text-left font-semibold transition ${
                         abaAdmin === "logs"
                           ? "bg-white text-black"
-                          : "bg-zinc-900 text-white hover:bg-zinc-800"
+                          : "bg-[#1F2937] text-slate-200 hover:bg-slate-700"
                       }`}
                     >
                       Logs de acesso
@@ -1383,7 +1383,7 @@ export default function Home() {
 
                 {abaAdmin === "usuarios" && (
                   <>
-                    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
+                    <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-2xl">
                       <h2 className="mb-5 text-2xl font-semibold">
                         Criar usuário
                       </h2>
@@ -1396,7 +1396,7 @@ export default function Home() {
                           onChange={(event) =>
                             setNovoUsuario(event.target.value)
                           }
-                          className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                          className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
                         />
 
                         <input
@@ -1404,7 +1404,7 @@ export default function Home() {
                           placeholder="Senha"
                           value={novaSenha}
                           onChange={(event) => setNovaSenha(event.target.value)}
-                          className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                          className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
                         />
 
                         <select
@@ -1414,7 +1414,7 @@ export default function Home() {
                               event.target.value as UsuarioSistema["perfil"]
                             )
                           }
-                          className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                          className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
                         >
                           <option value="admin">Admin</option>
                           <option value="monitoramento">Monitoramento</option>
@@ -1423,14 +1423,14 @@ export default function Home() {
 
                         <button
                           onClick={cadastrarUsuario}
-                          className="rounded-md bg-white px-5 py-3 font-semibold text-black transition hover:bg-zinc-200"
+                          className="rounded-md bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-500"
                         >
                           Criar
                         </button>
                       </div>
                     </div>
 
-                    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-xl">
+                    <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-xl">
                       <h2 className="mb-5 text-2xl font-semibold">
                         Usuários
                       </h2>
@@ -1439,7 +1439,7 @@ export default function Home() {
                         {usuarios.map((item) => (
                           <div
                             key={item.id}
-                            className="rounded-md border border-zinc-800 bg-zinc-950 p-4"
+                            className="rounded-md border border-slate-700 bg-[#0F172A] p-4"
                           >
                             {editandoUsuarioId === item.id ? (
                               <div className="grid gap-4">
@@ -1450,7 +1450,7 @@ export default function Home() {
                                     onChange={(event) =>
                                       setEdicaoUsuarioNome(event.target.value)
                                     }
-                                    className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                                    className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
                                   />
 
                                   <select
@@ -1461,7 +1461,7 @@ export default function Home() {
                                           .value as UsuarioSistema["perfil"]
                                       )
                                     }
-                                    className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                                    className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
                                   >
                                     <option value="admin">Admin</option>
                                     <option value="monitoramento">
@@ -1470,7 +1470,7 @@ export default function Home() {
                                     <option value="tecnico">Técnico</option>
                                   </select>
 
-                                  <label className="flex items-center gap-3 rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white">
+                                  <label className="flex items-center gap-3 rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white">
                                     <input
                                       type="checkbox"
                                       checked={edicaoUsuarioAtivo}
@@ -1492,20 +1492,20 @@ export default function Home() {
                                   onChange={(event) =>
                                     setEdicaoUsuarioSenha(event.target.value)
                                   }
-                                  className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                                  className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
                                 />
 
                                 <div className="flex flex-wrap gap-3">
                                   <button
                                     onClick={() => salvarUsuario(item.id)}
-                                    className="rounded-md bg-white px-5 py-3 font-semibold text-black transition hover:bg-zinc-200"
+                                    className="rounded-md bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-500"
                                   >
                                     Salvar
                                   </button>
 
                                   <button
                                     onClick={cancelarEdicaoUsuario}
-                                    className="rounded-md border border-zinc-700 px-5 py-3 font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                                    className="rounded-md border border-slate-600 px-5 py-3 font-medium text-slate-300 transition hover:border-slate-400 hover:text-white"
                                   >
                                     Cancelar
                                   </button>
@@ -1517,7 +1517,7 @@ export default function Home() {
                                   <p className="font-semibold">
                                     {item.username}
                                   </p>
-                                  <p className="text-sm text-zinc-500">
+                                  <p className="text-sm text-slate-400">
                                     {item.perfil} -{" "}
                                     {item.is_active ? "ativo" : "inativo"}
                                   </p>
@@ -1526,7 +1526,7 @@ export default function Home() {
                                 <div className="flex flex-wrap gap-3">
                                   <button
                                     onClick={() => iniciarEdicaoUsuario(item)}
-                                    className="rounded-md border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                                    className="rounded-md border border-slate-600 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-slate-400 hover:text-white"
                                   >
                                     Editar
                                   </button>
@@ -1548,7 +1548,7 @@ export default function Home() {
                 )}
 
                 {abaAdmin === "logs" && (
-                  <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-xl">
+                  <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-xl">
                     <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <h2 className="text-2xl font-semibold">
                         Logs de acesso
@@ -1556,7 +1556,7 @@ export default function Home() {
 
                       <button
                         onClick={carregarAdmin}
-                        className="rounded-md border border-zinc-700 px-4 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                        className="rounded-md border border-slate-600 px-4 py-3 text-sm font-medium text-slate-300 transition hover:border-slate-400 hover:text-white"
                       >
                         Atualizar
                       </button>
@@ -1566,7 +1566,7 @@ export default function Home() {
                       {accessLogs.map((item) => (
                         <div
                           key={item.id}
-                          className="rounded-md border border-zinc-800 bg-zinc-950 p-4"
+                          className="rounded-md border border-slate-700 bg-[#0F172A] p-4"
                         >
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <p className="font-semibold">{item.username}</p>
@@ -1581,7 +1581,7 @@ export default function Home() {
                             </span>
                           </div>
 
-                          <p className="mt-2 text-sm text-zinc-500">
+                          <p className="mt-2 text-sm text-slate-400">
                             {formatarData(item.criado_em)} - IP:{" "}
                             {item.ip || "não identificado"} - {item.perfil}
                           </p>
@@ -1609,7 +1609,7 @@ export default function Home() {
                         placeholder="Título"
                         value={titulo}
                         onChange={(event) => setTitulo(event.target.value)}
-                        className="rounded-md border border-slate-700 bg-[#0F172A] p-3 text-white outline-none transition focus:border-blue-400"
+                        className="rounded-md border border-slate-700 bg-[#0F172A] p-3 text-white outline-none transition focus:border-emerald-500"
                       />
                       </label>
 
@@ -1623,7 +1623,7 @@ export default function Home() {
                         value={descricao}
                         onChange={(event) => setDescricao(event.target.value)}
                         spellCheck
-                        className="min-h-28 w-full rounded-md border border-slate-700 bg-[#0F172A] p-3 pr-16 text-white outline-none transition focus:border-blue-400"
+                        className="min-h-28 w-full rounded-md border border-slate-700 bg-[#0F172A] p-3 pr-16 text-white outline-none transition focus:border-emerald-500"
                       />
 
                         <button
@@ -1635,7 +1635,7 @@ export default function Home() {
                               await melhorarTexto(descricao, "novo chamado")
                             )
                           }
-                          className="absolute bottom-3 right-3 rounded-md border border-blue-500/60 bg-zinc-950 px-3 py-2 text-sm font-bold text-blue-200 transition hover:border-blue-300 hover:text-white"
+                          className="absolute bottom-3 right-3 rounded-md border border-blue-500/60 bg-[#0F172A] px-3 py-2 text-sm font-bold text-blue-200 transition hover:border-blue-300 hover:text-white"
                         >
                           {melhorandoTexto ? "..." : "Aa"}
                         </button>
@@ -1649,7 +1649,7 @@ export default function Home() {
                       <select
                         value={condominio}
                         onChange={(event) => setCondominio(event.target.value)}
-                        className="rounded-md border border-slate-700 bg-[#0F172A] p-3 text-white outline-none transition focus:border-blue-400"
+                        className="rounded-md border border-slate-700 bg-[#0F172A] p-3 text-white outline-none transition focus:border-emerald-500"
                       >
                         <option value="">Selecione o condomínio</option>
 
@@ -1700,11 +1700,11 @@ export default function Home() {
                       </label>
 
                       {imagem && (
-                        <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                        <div className="rounded-lg border border-slate-700 bg-[#0F172A] p-4">
                           <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="text-sm text-zinc-400">
+                            <p className="text-sm text-slate-400">
                               Imagem selecionada:{" "}
-                              <span className="text-zinc-200">
+                              <span className="text-slate-200">
                                 {imagem.name}
                               </span>
                             </p>
@@ -1712,7 +1712,7 @@ export default function Home() {
                             <button
                               type="button"
                               onClick={() => setImagem(null)}
-                              className="rounded-md border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-300 transition hover:border-red-400 hover:text-red-200"
+                              className="rounded-md border border-slate-600 px-3 py-2 text-sm font-medium text-slate-300 transition hover:border-red-400 hover:text-red-200"
                             >
                               Remover foto
                             </button>
@@ -1723,7 +1723,7 @@ export default function Home() {
                             <img
                               src={imagemPreview}
                               alt="Prévia da imagem selecionada"
-                              className="max-h-80 w-full rounded-md border border-zinc-800 object-contain"
+                              className="max-h-80 w-full rounded-md border border-slate-700 object-contain"
                             />
                           )}
                         </div>
@@ -1752,7 +1752,7 @@ export default function Home() {
                       <div
                         key={chamado.id}
                         title={`Aberto por: ${chamado.criado_por_nome || "nao informado"}`}
-                        className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-xl"
+                        className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-xl"
                       >
                         {editandoChamadoId === chamado.id ? (
                           <div className="grid gap-4">
@@ -1761,7 +1761,7 @@ export default function Home() {
                                 Editar chamado
                               </h2>
 
-                              <span className="rounded-full bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-300">
+                              <span className="rounded-full bg-slate-800 px-4 py-2 text-sm font-medium text-slate-300">
                                 #{chamado.id}
                               </span>
                             </div>
@@ -1773,7 +1773,7 @@ export default function Home() {
                               onChange={(event) =>
                                 setEdicaoTitulo(event.target.value)
                               }
-                              className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                              className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
                             />
 
                             <textarea
@@ -1782,7 +1782,7 @@ export default function Home() {
                               onChange={(event) =>
                                 setEdicaoDescricao(event.target.value)
                               }
-                              className="min-h-28 rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                              className="min-h-28 rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
                             />
 
                             <select
@@ -1790,7 +1790,7 @@ export default function Home() {
                               onChange={(event) =>
                                 setEdicaoCondominio(event.target.value)
                               }
-                              className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                              className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
                             >
                               <option value="">Selecione o condomínio</option>
 
@@ -1801,7 +1801,7 @@ export default function Home() {
                               ))}
                             </select>
 
-                            <label className="flex items-center gap-3 rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white">
+                            <label className="flex items-center gap-3 rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white">
                               <input
                                 type="checkbox"
                                 checked={edicaoUrgente}
@@ -1817,9 +1817,9 @@ export default function Home() {
                             {chamado.imagem &&
                               !edicaoImagem &&
                               !edicaoRemoverImagem && (
-                                <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                                <div className="rounded-lg border border-slate-700 bg-[#0F172A] p-4">
                                   <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <p className="text-sm text-zinc-400">
+                                    <p className="text-sm text-slate-400">
                                       Foto atual
                                     </p>
 
@@ -1828,7 +1828,7 @@ export default function Home() {
                                       onClick={() =>
                                         setEdicaoRemoverImagem(true)
                                       }
-                                      className="rounded-md border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-300 transition hover:border-red-400 hover:text-red-200"
+                                      className="rounded-md border border-slate-600 px-3 py-2 text-sm font-medium text-slate-300 transition hover:border-red-400 hover:text-red-200"
                                     >
                                       Remover foto atual
                                     </button>
@@ -1838,7 +1838,7 @@ export default function Home() {
                                   <img
                                     src={chamado.imagem}
                                     alt="Foto atual do chamado"
-                                    className="max-h-80 w-full rounded-md border border-zinc-800 object-contain"
+                                    className="max-h-80 w-full rounded-md border border-slate-700 object-contain"
                                   />
                                 </div>
                               )}
@@ -1849,8 +1849,8 @@ export default function Home() {
                               </p>
                             )}
 
-                            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-zinc-700 bg-zinc-950 p-6 text-white transition hover:border-white">
-                              <span className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-slate-500 bg-[#0F172A] p-6 text-white transition hover:border-slate-300">
+                              <span className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">
                                 Foto
                               </span>
 
@@ -1858,7 +1858,7 @@ export default function Home() {
                                 Clique aqui para trocar a foto
                               </span>
 
-                              <span className="text-sm text-zinc-400">
+                              <span className="text-sm text-slate-400">
                                 PNG, JPG ou JPEG
                               </span>
 
@@ -1881,11 +1881,11 @@ export default function Home() {
                             </label>
 
                             {edicaoImagem && (
-                              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                              <div className="rounded-lg border border-slate-700 bg-[#0F172A] p-4">
                                 <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                  <p className="text-sm text-zinc-400">
+                                  <p className="text-sm text-slate-400">
                                     Nova imagem:{" "}
-                                    <span className="text-zinc-200">
+                                    <span className="text-slate-200">
                                       {edicaoImagem.name}
                                     </span>
                                   </p>
@@ -1893,7 +1893,7 @@ export default function Home() {
                                   <button
                                     type="button"
                                     onClick={() => setEdicaoImagem(null)}
-                                    className="rounded-md border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-300 transition hover:border-red-400 hover:text-red-200"
+                                    className="rounded-md border border-slate-600 px-3 py-2 text-sm font-medium text-slate-300 transition hover:border-red-400 hover:text-red-200"
                                   >
                                     Remover troca
                                   </button>
@@ -1904,7 +1904,7 @@ export default function Home() {
                                   <img
                                     src={edicaoImagemPreview}
                                     alt="Prévia da nova imagem"
-                                    className="max-h-80 w-full rounded-md border border-zinc-800 object-contain"
+                                    className="max-h-80 w-full rounded-md border border-slate-700 object-contain"
                                   />
                                 )}
                               </div>
@@ -1915,14 +1915,14 @@ export default function Home() {
                                 onClick={() =>
                                   salvarEdicaoChamado(chamado.id)
                                 }
-                                className="rounded-md bg-white px-5 py-3 font-semibold text-black transition hover:bg-zinc-200"
+                                className="rounded-md bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-500"
                               >
                                 Salvar alterações
                               </button>
 
                               <button
                                 onClick={cancelarEdicao}
-                                className="rounded-md border border-zinc-700 px-5 py-3 font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                                className="rounded-md border border-slate-600 px-5 py-3 font-medium text-slate-300 transition hover:border-slate-400 hover:text-white"
                               >
                                 Cancelar
                               </button>
@@ -1967,7 +1967,7 @@ export default function Home() {
                           </div>
                         </div>
 
-                        <p className="mb-5 text-zinc-300">
+                        <p className="mb-5 text-slate-200">
                           {chamado.descricao}
                         </p>
 
@@ -1976,7 +1976,7 @@ export default function Home() {
                             href={chamado.imagem}
                             target="_blank"
                             rel="noreferrer"
-                            className="mb-5 block rounded-lg border border-zinc-800 bg-zinc-950 p-2"
+                            className="mb-5 block rounded-lg border border-slate-700 bg-[#0F172A] p-2"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
@@ -1988,7 +1988,7 @@ export default function Home() {
                         )}
 
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="text-sm text-zinc-500">
+                          <div className="text-sm text-slate-400">
                             <p>
                               Condomínio:{" "}
                               {chamado.condominio_nome || chamado.condominio}
@@ -2012,7 +2012,7 @@ export default function Home() {
                               )}
 
                             {chamado.descricao_resolucao && (
-                              <p className="mt-2 text-zinc-300">
+                              <p className="mt-2 text-slate-200">
                                 Feito: {chamado.descricao_resolucao}
                               </p>
                             )}
@@ -2022,14 +2022,14 @@ export default function Home() {
                                 Urgente
                               </p>
                             ) : (
-                              <p className="text-zinc-400">Normal</p>
+                              <p className="text-slate-400">Normal</p>
                             )}
                           </div>
 
                           <div className="flex flex-wrap gap-3">
                             <button
                               onClick={() => iniciarEdicao(chamado)}
-                              className="rounded-md border border-zinc-700 px-5 py-3 font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                              className="rounded-md border border-slate-600 px-5 py-3 font-medium text-slate-300 transition hover:border-slate-400 hover:text-white"
                             >
                               Editar
                             </button>
@@ -2040,7 +2040,7 @@ export default function Home() {
                                 onClick={() =>
                                   iniciarAtendimento(chamado.id)
                                 }
-                                className="rounded-md bg-blue-600 px-5 py-3 font-medium text-white transition hover:bg-blue-700"
+                                className="rounded-md bg-blue-600 px-5 py-3 font-medium text-white transition hover:bg-blue-500"
                               >
                                 Iniciar atendimento
                               </button>
@@ -2049,7 +2049,7 @@ export default function Home() {
                             {chamado.status === "andamento" && (
                               <button
                                 onClick={() => abrirResolucao(chamado)}
-                                className="rounded-md bg-green-600 px-5 py-3 font-medium text-white transition hover:bg-green-700"
+                                className="rounded-md bg-emerald-600 px-5 py-3 font-medium text-white transition hover:bg-emerald-500"
                               >
                                 Marcar como resolvido
                               </button>
