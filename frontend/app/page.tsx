@@ -515,6 +515,18 @@ export default function Home() {
   const podeIniciarAtendimento =
     usuarioLogado?.perfil === "admin" || usuarioLogado?.perfil === "tecnico";
 
+  function podeEditarChamado(chamado: Chamado) {
+    if (usuarioLogado?.perfil === "admin") {
+      return true;
+    }
+
+    if (usuarioLogado?.perfil === "monitoramento") {
+      return chamado.status === "aberto";
+    }
+
+    return usuarioLogado?.perfil === "tecnico";
+  }
+
   const podeGerenciarCondominios =
     usuarioLogado?.perfil === "admin" ||
     usuarioLogado?.perfil === "monitoramento";
@@ -2970,24 +2982,26 @@ export default function Home() {
                           </div>
 
                           <div className="flex flex-wrap gap-3">
-                            <button
-                              onClick={() => iniciarEdicao(chamado)}
-                              title="Editar chamado"
-                              className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-slate-600 text-slate-300 transition hover:border-slate-400 hover:bg-slate-800/70 hover:text-white"
-                            >
-                              <svg
-                                className="h-5 w-5"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="1.8"
-                                viewBox="0 0 24 24"
+                            {podeEditarChamado(chamado) && (
+                              <button
+                                onClick={() => iniciarEdicao(chamado)}
+                                title="Editar chamado"
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-slate-600 text-slate-300 transition hover:border-slate-400 hover:bg-slate-800/70 hover:text-white"
                               >
-                                <path d="M12 20h9" />
-                                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
-                              </svg>
-                            </button>
+                                <svg
+                                  className="h-5 w-5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="1.8"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path d="M12 20h9" />
+                                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+                                </svg>
+                              </button>
+                            )}
 
                             {chamado.status === "aberto" &&
                               podeIniciarAtendimento && (

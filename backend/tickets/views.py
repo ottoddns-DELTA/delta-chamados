@@ -376,6 +376,14 @@ class ChamadoViewSet(viewsets.ModelViewSet):
                 'Monitoramento nao pode iniciar atendimento.'
             )
 
+        if (
+            perfil_usuario(self.request.user) == MONITORAMENTO
+            and status_anterior != 'aberto'
+        ):
+            raise PermissionDenied(
+                'Monitoramento so pode editar chamados abertos.'
+            )
+
         campos_extras = {}
 
         if novo_status == 'andamento' and status_anterior != 'andamento':
