@@ -213,6 +213,10 @@ export default function Home() {
   const [mensagemPopup, setMensagemPopup] = useState("");
   const [melhorandoTexto, setMelhorandoTexto] = useState(false);
   const [menuUsuarioAberto, setMenuUsuarioAberto] = useState(false);
+  const [modalSenhaAberto, setModalSenhaAberto] = useState(false);
+  const [senhaAtual, setSenhaAtual] = useState("");
+  const [novaSenhaConta, setNovaSenhaConta] = useState("");
+  const [confirmarNovaSenha, setConfirmarNovaSenha] = useState("");
 
   const [aba, setAba] = useState<Aba>("chamados");
   const [abaAdmin, setAbaAdmin] = useState<AbaAdmin>("usuarios");
@@ -869,6 +873,55 @@ export default function Home() {
     setErroLogin("");
   }
 
+  function abrirModalSenha() {
+    setMenuUsuarioAberto(false);
+    setSenhaAtual("");
+    setNovaSenhaConta("");
+    setConfirmarNovaSenha("");
+    setModalSenhaAberto(true);
+  }
+
+  function fecharModalSenha() {
+    setModalSenhaAberto(false);
+    setSenhaAtual("");
+    setNovaSenhaConta("");
+    setConfirmarNovaSenha("");
+  }
+
+  async function alterarMinhaSenha() {
+    if (!senhaAtual || !novaSenhaConta || !confirmarNovaSenha) {
+      alert("Preencha a senha atual, a nova senha e a confirmacao.");
+      return;
+    }
+
+    if (novaSenhaConta !== confirmarNovaSenha) {
+      alert("A nova senha e a confirmacao precisam ser iguais.");
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/api/minha-senha/`, {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        senha_atual: senhaAtual,
+        nova_senha: novaSenhaConta,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.detail || "Nao foi possivel alterar a senha.");
+      return;
+    }
+
+    fecharModalSenha();
+    alert("Senha alterada com sucesso.");
+  }
+
   useEffect(() => {
     return () => {
       if (imagemPreview) {
@@ -1107,6 +1160,59 @@ export default function Home() {
         </div>
       )}
 
+      {modalSenhaAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-md rounded-xl border border-slate-700/70 bg-[#1F2937] p-6 shadow-2xl">
+            <h2 className="mb-2 text-2xl font-semibold">Alterar senha</h2>
+            <p className="mb-5 text-sm text-slate-400">
+              Informe sua senha atual e escolha uma nova senha.
+            </p>
+
+            <div className="grid gap-4">
+              <input
+                type="password"
+                placeholder="Senha atual"
+                value={senhaAtual}
+                onChange={(event) => setSenhaAtual(event.target.value)}
+                className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
+              />
+
+              <input
+                type="password"
+                placeholder="Nova senha"
+                value={novaSenhaConta}
+                onChange={(event) => setNovaSenhaConta(event.target.value)}
+                className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
+              />
+
+              <input
+                type="password"
+                placeholder="Confirmar nova senha"
+                value={confirmarNovaSenha}
+                onChange={(event) => setConfirmarNovaSenha(event.target.value)}
+                className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
+              />
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={alterarMinhaSenha}
+                  className="rounded-md bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-500"
+                >
+                  Salvar senha
+                </button>
+
+                <button
+                  onClick={fecharModalSenha}
+                  className="rounded-md border border-slate-600 px-5 py-3 font-medium text-slate-300 transition hover:border-slate-400 hover:text-white"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {resolvendoChamadoId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
           <div className="w-full max-w-lg rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-2xl">
@@ -1327,28 +1433,29 @@ export default function Home() {
                 </button>
 
                 <div
-                  className={`absolute right-0 top-[calc(100%-1px)] z-20 w-56 overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-950 shadow-2xl shadow-black/30 transition ${
+                  className={`absolute right-0 top-[calc(100%-1px)] z-20 w-56 overflow-hidden rounded-xl border border-white/10 bg-[#1F2937]/85 text-white shadow-2xl shadow-black/40 backdrop-blur-xl transition ${
                     menuUsuarioAberto
                       ? "visible translate-y-0 opacity-100"
                       : "invisible -translate-y-1 opacity-0"
                   }`}
                 >
-                  <div className="border-b border-slate-200 px-5 py-4 text-center">
-                    <p className="text-base font-bold tracking-tight text-slate-900">
+                  <div className="border-b border-white/10 px-5 py-4">
+                    <p className="text-sm font-bold tracking-tight text-white">
                       {usuarioLogado?.username}
                     </p>
-                    <p className="mt-1 text-xs font-medium uppercase text-slate-400">
+                    <p className="mt-1 text-[11px] font-semibold uppercase text-slate-300">
                       {perfilLabel}
                     </p>
                   </div>
 
                   <button
                     type="button"
-                    className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    onClick={abrirModalSenha}
+                    className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white"
                   >
                     <svg
                       aria-hidden="true"
-                      className="h-5 w-5 text-slate-600"
+                      className="h-5 w-5 text-slate-300"
                       fill="none"
                       stroke="currentColor"
                       strokeLinecap="round"
@@ -1364,27 +1471,12 @@ export default function Home() {
                   </button>
 
                   <button
-                    type="button"
-                    className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    <svg
-                      aria-hidden="true"
-                      className="h-5 w-5 text-slate-600"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M21 14.5A7.5 7.5 0 0 1 9.5 3a8.5 8.5 0 1 0 11.5 11.5Z" />
-                    </svg>
-                    Modo Noturno
-                  </button>
-
-                  <button
                     onClick={sair}
-                    className="flex w-full items-center gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 text-left text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+                    className="flex w-full items-center gap-3 border-t border-white/10 bg-white/5 px-5 py-4 text-left text-sm font-bold text-slate-200 transition hover:bg-white/10 hover:text-white"
                   >
                     <svg
                       aria-hidden="true"
-                      className="h-5 w-5 text-slate-700"
+                      className="h-5 w-5 text-slate-300"
                       fill="none"
                       stroke="currentColor"
                       strokeLinecap="round"

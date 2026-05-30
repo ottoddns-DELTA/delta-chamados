@@ -301,6 +301,42 @@ class LoginView(APIView):
         })
 
 
+class MinhaSenhaView(APIView):
+
+    def post(self, request):
+        senha_atual = request.data.get('senha_atual', '')
+        nova_senha = request.data.get('nova_senha', '')
+
+        if not senha_atual or not nova_senha:
+            return Response(
+                {'detail': 'Informe a senha atual e a nova senha.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if len(nova_senha) < 6:
+            return Response(
+                {'detail': 'A nova senha precisa ter pelo menos 6 caracteres.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not request.user.check_password(senha_atual):
+            return Response(
+                {'detail': 'Senha atual incorreta.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        request.user.set_password(nova_senha)
+        request.user.save()
+
+        registrar_acao(
+            request,
+            'alterou_propria_senha',
+            f'Usuário #{request.user.id}: {request.user.username}',
+        )
+
+        return Response({'detail': 'Senha alterada.'})
+
+
 class ChamadoViewSet(viewsets.ModelViewSet):
 
     queryset = Chamado.objects.all().order_by('-criado_em')
