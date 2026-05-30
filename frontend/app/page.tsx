@@ -2972,9 +2972,21 @@ export default function Home() {
                           <div className="flex flex-wrap gap-3">
                             <button
                               onClick={() => iniciarEdicao(chamado)}
-                              className="rounded-md border border-slate-600 px-5 py-3 font-medium text-slate-300 transition hover:border-slate-400 hover:text-white"
+                              title="Editar chamado"
+                              className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-slate-600 text-slate-300 transition hover:border-slate-400 hover:bg-slate-800/70 hover:text-white"
                             >
-                              Editar
+                              <svg
+                                className="h-5 w-5"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="1.8"
+                                viewBox="0 0 24 24"
+                              >
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+                              </svg>
                             </button>
 
                             {chamado.status === "aberto" &&
@@ -3004,21 +3016,25 @@ export default function Home() {
                           <button
                             type="button"
                             onClick={() => alternarSelecaoPdf(chamado.id)}
-                            className={`absolute bottom-5 right-5 flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition ${
+                            className={`absolute bottom-5 right-5 flex h-10 w-10 items-center justify-center rounded-full border transition ${
                               chamadosSelecionadosPdf.includes(chamado.id)
-                                ? "border-emerald-400 bg-emerald-500/20 text-emerald-100"
+                                ? "border-emerald-400 bg-emerald-500/20 text-emerald-100 shadow-[0_0_0_3px_rgba(16,185,129,0.10)]"
                                 : "border-slate-600 bg-[#0F172A]/95 text-slate-300 hover:border-emerald-400/70 hover:text-white"
                             }`}
                             title="Selecionar para exportar"
+                            aria-label="Selecionar chamado para exportar"
                           >
                             <span
-                              className={`h-4 w-4 rounded border ${
+                              className={`flex h-4 w-4 items-center justify-center rounded border text-[10px] ${
                                 chamadosSelecionadosPdf.includes(chamado.id)
                                   ? "border-emerald-300 bg-emerald-500"
                                   : "border-slate-500"
                               }`}
-                            />
-                            PDF
+                            >
+                              {chamadosSelecionadosPdf.includes(chamado.id)
+                                ? "✓"
+                                : ""}
+                            </span>
                           </button>
                         )}
                           </>
