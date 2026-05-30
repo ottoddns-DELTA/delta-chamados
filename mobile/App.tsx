@@ -128,20 +128,20 @@ export default function App() {
     if (pushEstado === "ativo") {
       return {
         cor: "#22c55e",
-        texto: "Alertas ativos",
+        texto: "Ativos",
       };
     }
 
     if (pushEstado === "erro") {
       return {
         cor: "#ef4444",
-        texto: pushDetalhe || "Alertas inativos",
+        texto: "Inativos",
       };
     }
 
     return {
       cor: "#3b82f6",
-      texto: "Verificando alertas",
+      texto: "Verificando",
     };
   }, [pushDetalhe, pushEstado]);
 
@@ -599,8 +599,16 @@ export default function App() {
             {usuario?.nome} - {usuario?.perfil}
           </Text>
           <TouchableOpacity
-            style={styles.pushRow}
-            onPress={() =>
+            style={[
+              styles.pushPill,
+              pushEstado === "erro" && styles.pushPillError,
+            ]}
+            onPress={() => {
+              if (pushEstado === "erro" && pushDetalhe) {
+                Alert.alert("Alertas", pushDetalhe);
+                return;
+              }
+
               registrarPush(token).catch((error) => {
                 setPushEstado("erro");
                 setPushDetalhe(
@@ -608,10 +616,11 @@ export default function App() {
                     ? error.message.replace(API_URL, "API")
                     : "Erro ao registrar alertas"
                 );
-              })
-            }
+              });
+            }}
           >
             <View style={[styles.pushDot, { backgroundColor: pushInfo.cor }]} />
+            <Text style={styles.pushLabel}>Alertas</Text>
             <Text style={styles.pushStatus}>{pushInfo.texto}</Text>
           </TouchableOpacity>
         </View>
@@ -748,20 +757,37 @@ const styles = StyleSheet.create({
     color: "#a1a1aa",
     fontSize: 14,
   },
-  pushStatus: {
-    color: "#a1a1aa",
-    fontSize: 12,
+  pushLabel: {
+    color: "#f8fafc",
+    fontSize: 11,
+    fontWeight: "700",
   },
-  pushRow: {
+  pushStatus: {
+    color: "#cbd5e1",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  pushPill: {
     alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "#111827",
+    borderColor: "#1f2937",
+    borderRadius: 999,
+    borderWidth: 1,
     flexDirection: "row",
-    gap: 7,
-    marginTop: 5,
+    gap: 6,
+    marginTop: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  pushPillError: {
+    backgroundColor: "#1f1418",
+    borderColor: "#7f1d1d",
   },
   pushDot: {
     borderRadius: 999,
-    height: 9,
-    width: 9,
+    height: 8,
+    width: 8,
   },
   input: {
     backgroundColor: "#09090b",

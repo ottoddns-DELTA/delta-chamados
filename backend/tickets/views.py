@@ -397,17 +397,25 @@ class PushDeviceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return PushDevice.objects.filter(usuario=self.request.user)
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         token = serializer.validated_data.get('token')
         plataforma = serializer.validated_data.get('plataforma', '')
 
-        PushDevice.objects.update_or_create(
+        device, _ = PushDevice.objects.update_or_create(
             token=token,
             defaults={
                 'usuario': self.request.user,
                 'plataforma': plataforma,
                 'ativo': True,
             },
+        )
+
+        return Response(
+            self.get_serializer(device).data,
+            status=status.HTTP_201_CREATED
         )
 
     def perform_destroy(self, instance):

@@ -131,6 +131,11 @@ class PushDeviceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PushDevice
+        extra_kwargs = {
+            'token': {
+                'validators': [],
+            },
+        }
         fields = [
             'id',
             'token',
