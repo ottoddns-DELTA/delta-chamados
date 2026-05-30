@@ -9,7 +9,14 @@ const API_URL =
 
 const DIAS_NO_HISTORICO = 30;
 
-type Aba = "chamados" | "andamento" | "historico" | "condominios" | "admin";
+type Aba =
+  | "chamados"
+  | "abertos"
+  | "andamento"
+  | "urgentes"
+  | "historico"
+  | "condominios"
+  | "admin";
 type AbaAdmin = "usuarios" | "logs";
 
 type Condominio = {
@@ -81,7 +88,14 @@ type ActionLog = {
 function MenuIcon({
   tipo,
 }: {
-  tipo: "plus" | "clock" | "history" | "building" | "settings";
+  tipo:
+    | "plus"
+    | "inbox"
+    | "clock"
+    | "alert"
+    | "history"
+    | "building"
+    | "settings";
 }) {
   const common = {
     className: "h-5 w-5 shrink-0",
@@ -101,11 +115,29 @@ function MenuIcon({
     );
   }
 
+  if (tipo === "inbox") {
+    return (
+      <svg {...common}>
+        <path d="M4 4h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
+        <path d="M4 13h4l2 3h4l2-3h4" />
+      </svg>
+    );
+  }
+
   if (tipo === "clock") {
     return (
       <svg {...common}>
         <circle cx="12" cy="12" r="8" />
         <path d="M12 8v5l3 2" />
+      </svg>
+    );
+  }
+
+  if (tipo === "alert") {
+    return (
+      <svg {...common}>
+        <path d="m12 3 10 18H2L12 3Z" />
+        <path d="M12 9v4M12 17h.01" />
       </svg>
     );
   }
@@ -157,6 +189,55 @@ function CameraIcon() {
 
 function CampoObrigatorio() {
   return <span className="text-red-500">*</span>;
+}
+
+function MenuBadge({
+  valor,
+  cor = "bg-slate-600 text-white",
+}: {
+  valor: number;
+  cor?: string;
+}) {
+  return (
+    <span
+      className={`ml-auto min-w-7 rounded-full px-2 py-0.5 text-center text-xs font-bold ${cor}`}
+    >
+      {valor}
+    </span>
+  );
+}
+
+function SidebarItem({
+  ativo,
+  icone,
+  label,
+  contador,
+  corContador,
+  onClick,
+}: {
+  ativo: boolean;
+  icone: Parameters<typeof MenuIcon>[0]["tipo"];
+  label: string;
+  contador?: number;
+  corContador?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-3 rounded-md border px-3 py-2.5 text-left text-sm font-semibold transition ${
+        ativo
+          ? "border-slate-700/80 bg-[#1F2937] text-white shadow-sm"
+          : "border-transparent text-slate-300 hover:border-slate-700/60 hover:bg-slate-800/70 hover:text-white"
+      }`}
+    >
+      <MenuIcon tipo={icone} />
+      <span>{label}</span>
+      {typeof contador === "number" && (
+        <MenuBadge valor={contador} cor={corContador} />
+      )}
+    </button>
+  );
 }
 
 function chamadoEstaNoHistorico(chamado: Chamado) {
@@ -704,6 +785,7 @@ export default function Home() {
 
     await carregarChamados();
     setMensagemPopup("Chamado aberto com sucesso");
+    setAba("abertos");
   }
 
   function abrirResolucao(chamado: Chamado) {
@@ -1281,107 +1363,87 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="mb-8 grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-            <button
-              onClick={() => setAba("chamados")}
-              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium transition ${
-                aba === "chamados"
-                  ? "bg-white text-slate-950 shadow-sm"
-                  : "text-slate-300 hover:bg-slate-800/70 hover:text-white"
-              }`}
-            >
-              <MenuIcon tipo="plus" />
-              Abrir Chamado
-            </button>
+          <div className="grid gap-6">
+            <div>
+              <p className="mb-2 px-3 text-xs font-semibold text-slate-400">
+                Monitoramento
+              </p>
 
-            <button
-              onClick={() => setAba("andamento")}
-              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium transition ${
-                aba === "andamento"
-                  ? "bg-white text-slate-950 shadow-sm"
-                  : "text-slate-300 hover:bg-slate-800/70 hover:text-white"
-              }`}
-            >
-              <MenuIcon tipo="clock" />
-              Em Andamento
-            </button>
+              <div className="grid gap-1">
+                <SidebarItem
+                  ativo={aba === "chamados"}
+                  icone="plus"
+                  label="Abrir Chamado"
+                  onClick={() => setAba("chamados")}
+                />
 
-            <button
-              onClick={() => setAba("historico")}
-              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium transition ${
-                aba === "historico"
-                  ? "bg-white text-slate-950 shadow-sm"
-                  : "text-slate-300 hover:bg-slate-800/70 hover:text-white"
-              }`}
-            >
-              <MenuIcon tipo="history" />
-              Histórico
-            </button>
+                <SidebarItem
+                  ativo={aba === "abertos"}
+                  icone="inbox"
+                  label="Em Aberto"
+                  contador={chamadosAbertos.length}
+                  corContador="bg-emerald-500 text-white"
+                  onClick={() => setAba("abertos")}
+                />
 
-            <button
-              onClick={() => setAba("condominios")}
-              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium transition ${
-                aba === "condominios"
-                  ? "bg-white text-slate-950 shadow-sm"
-                  : "text-slate-300 hover:bg-slate-800/70 hover:text-white"
-              }`}
-            >
-              <MenuIcon tipo="building" />
-              Condomínios
-            </button>
+                <SidebarItem
+                  ativo={aba === "andamento"}
+                  icone="clock"
+                  label="Em Andamento"
+                  contador={chamadosEmAtendimento.length}
+                  corContador="bg-blue-500 text-white"
+                  onClick={() => setAba("andamento")}
+                />
 
-            {usuarioLogado?.perfil === "admin" && (
-              <button
-                onClick={() => {
-                  setAba("admin");
-                  carregarAdmin();
-                }}
-                className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium transition ${
-                  aba === "admin"
-                    ? "bg-white text-slate-950 shadow-sm"
-                    : "text-slate-300 hover:bg-slate-800/70 hover:text-white"
-                }`}
-              >
-                <MenuIcon tipo="settings" />
-                Administração
-              </button>
-            )}
-          </div>
+                <SidebarItem
+                  ativo={aba === "urgentes"}
+                  icone="alert"
+                  label="Urgentes"
+                  contador={chamadosUrgentes.length}
+                  corContador="bg-red-500 text-white"
+                  onClick={() => setAba("urgentes")}
+                />
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            <div className="rounded-md border border-slate-700/70 bg-[#1F2937] p-4">
-              <p className="text-xs text-slate-300">Chamados Abertos</p>
-              <h2 className="text-2xl font-bold text-emerald-500">
-                {chamadosAbertos.length}
-              </h2>
+                <SidebarItem
+                  ativo={aba === "historico"}
+                  icone="history"
+                  label="Resolvidos"
+                  contador={chamadosResolvidos.length}
+                  corContador="bg-emerald-600 text-white"
+                  onClick={() => setAba("historico")}
+                />
+              </div>
             </div>
 
-            <div className="rounded-md border border-slate-700/70 bg-[#1F2937] p-4">
-              <p className="text-xs text-slate-300">Em Andamento</p>
-              <h2 className="text-2xl font-bold text-blue-500">
-                {chamadosEmAtendimento.length}
-              </h2>
-            </div>
+            <div className="border-t border-slate-800 pt-5">
+              <p className="mb-2 px-3 text-xs font-semibold text-slate-400">
+                Gerenciamento
+              </p>
 
-            <div className="rounded-md border border-slate-700/70 bg-[#1F2937] p-4">
-              <p className="text-xs text-slate-300">Urgentes</p>
-              <h2 className="text-2xl font-bold text-red-500">
-                {chamadosUrgentes.length}
-              </h2>
-            </div>
+              <div className="grid gap-1">
+                <SidebarItem
+                  ativo={aba === "condominios"}
+                  icone="building"
+                  label="Condomínios"
+                  contador={condominios.length}
+                  corContador="bg-slate-600 text-white"
+                  onClick={() => setAba("condominios")}
+                />
 
-            <div className="rounded-md border border-slate-700/70 bg-[#1F2937] p-4">
-              <p className="text-xs text-slate-300">Resolvidos</p>
-              <h2 className="text-2xl font-bold text-emerald-500">
-                {chamadosResolvidos.length}
-              </h2>
-            </div>
-
-            <div className="rounded-md border border-slate-700/70 bg-[#1F2937] p-4">
-              <p className="text-xs text-slate-300">Condomínios</p>
-              <h2 className="text-2xl font-bold text-blue-500">
-                {condominios.length}
-              </h2>
+                {usuarioLogado?.perfil === "admin" && (
+                  <SidebarItem
+                    ativo={aba === "admin"}
+                    icone="settings"
+                    label="Administração"
+                    contador={1}
+                    corContador="bg-slate-600 text-white"
+                    onClick={() => {
+                      setAba("admin");
+                      carregarAdmin();
+                    }}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </aside>
@@ -1911,9 +1973,7 @@ export default function Home() {
               </div>
             )}
 
-            {(aba === "chamados" || aba === "andamento" || aba === "historico") && (
-              <>
-                {aba === "chamados" && (
+            {aba === "chamados" && (
                   <div className="mb-8 rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-2xl">
                     <h2 className="mb-5 text-xl font-semibold">
                       Novo Chamado
@@ -2055,8 +2115,12 @@ export default function Home() {
                       </button>
                     </div>
                   </div>
-                )}
+            )}
 
+            {(aba === "abertos" ||
+              aba === "andamento" ||
+              aba === "urgentes" ||
+              aba === "historico") && (
                 <div className="grid gap-5">
                   {chamados
                     .filter((chamado) =>
@@ -2064,6 +2128,8 @@ export default function Home() {
                         ? chamadoEstaNoHistorico(chamado)
                         : aba === "andamento"
                           ? chamado.status === "andamento"
+                          : aba === "urgentes"
+                            ? chamado.urgente && chamado.status !== "resolvido"
                           : chamado.status === "aberto"
                     )
                     .map((chamado) => (
@@ -2385,7 +2451,6 @@ export default function Home() {
                       </div>
                     ))}
                 </div>
-              </>
             )}
           </div>
         </div>
