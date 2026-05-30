@@ -68,6 +68,16 @@ type AccessLog = {
   criado_em: string;
 };
 
+type ActionLog = {
+  id: number;
+  usuario_nome?: string;
+  perfil: string;
+  acao: string;
+  detalhe: string;
+  ip?: string | null;
+  criado_em: string;
+};
+
 function MenuIcon({
   tipo,
 }: {
@@ -209,6 +219,7 @@ export default function Home() {
   const [condominios, setCondominios] = useState<Condominio[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioSistema[]>([]);
   const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
+  const [actionLogs, setActionLogs] = useState<ActionLog[]>([]);
 
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -379,12 +390,17 @@ export default function Home() {
       return;
     }
 
-    const [usuariosResponse, logsResponse] = await Promise.all([
+    const [usuariosResponse, logsResponse, actionLogsResponse] =
+      await Promise.all([
       fetch(`${API_URL}/api/usuarios/`, {
         cache: "no-store",
         headers: authHeaders,
       }),
       fetch(`${API_URL}/api/access-logs/`, {
+        cache: "no-store",
+        headers: authHeaders,
+      }),
+      fetch(`${API_URL}/api/action-logs/`, {
         cache: "no-store",
         headers: authHeaders,
       }),
@@ -396,6 +412,10 @@ export default function Home() {
 
     if (logsResponse.ok) {
       setAccessLogs((await logsResponse.json()).slice(0, 20));
+    }
+
+    if (actionLogsResponse.ok) {
+      setActionLogs((await actionLogsResponse.json()).slice(0, 30));
     }
   }
 
@@ -1436,7 +1456,7 @@ export default function Home() {
                           : "bg-[#1F2937] text-slate-200 hover:bg-slate-700"
                       }`}
                     >
-                      Logs de acesso
+                      Logs e auditoria
                     </button>
                   </div>
                 </div>
@@ -1611,7 +1631,7 @@ export default function Home() {
                   <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-xl">
                     <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <h2 className="text-2xl font-semibold">
-                        Logs de acesso
+                        Logs e auditoria
                       </h2>
 
                       <button
@@ -1622,31 +1642,76 @@ export default function Home() {
                       </button>
                     </div>
 
-                    <div className="grid gap-3">
-                      {accessLogs.map((item) => (
-                        <div
-                          key={item.id}
-                          className="rounded-md border border-slate-700 bg-[#0F172A] p-4"
-                        >
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="font-semibold">{item.username}</p>
-                            <span
-                              className={`rounded-full px-3 py-1 text-sm font-medium ${
-                                item.sucesso
-                                  ? "bg-green-500/20 text-green-300"
-                                  : "bg-red-500/20 text-red-300"
-                              }`}
-                            >
-                              {item.sucesso ? "sucesso" : "falha"}
-                            </span>
-                          </div>
+                    <div className="mb-6">
+                      <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Alteracoes no sistema
+                      </h3>
 
-                          <p className="mt-2 text-sm text-slate-400">
-                            {formatarData(item.criado_em)} - IP:{" "}
-                            {item.ip || "não identificado"} - {item.perfil}
+                      <div className="grid gap-3">
+                        {actionLogs.map((item) => (
+                          <div
+                            key={item.id}
+                            className="rounded-md border border-slate-700 bg-[#0F172A] p-4"
+                          >
+                            <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                              <p className="font-semibold">
+                                {item.usuario_nome || "sistema"}
+                              </p>
+                              <span className="rounded-full bg-blue-500/20 px-3 py-1 text-sm font-medium text-blue-300">
+                                {item.acao}
+                              </span>
+                            </div>
+
+                            <pre className="whitespace-pre-wrap rounded-md border border-slate-700 bg-black/20 p-3 text-sm leading-6 text-slate-200">
+                              {item.detalhe || "Sem detalhe"}
+                            </pre>
+
+                            <p className="mt-2 text-sm text-slate-400">
+                              {formatarData(item.criado_em)} - IP:{" "}
+                              {item.ip || "nao identificado"} - {item.perfil}
+                            </p>
+                          </div>
+                        ))}
+
+                        {actionLogs.length === 0 && (
+                          <p className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-sm text-slate-400">
+                            Nenhuma alteracao registrada.
                           </p>
-                        </div>
-                      ))}
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Acessos
+                      </h3>
+
+                      <div className="grid gap-3">
+                        {accessLogs.map((item) => (
+                          <div
+                            key={item.id}
+                            className="rounded-md border border-slate-700 bg-[#0F172A] p-4"
+                          >
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                              <p className="font-semibold">{item.username}</p>
+                              <span
+                                className={`rounded-full px-3 py-1 text-sm font-medium ${
+                                  item.sucesso
+                                    ? "bg-green-500/20 text-green-300"
+                                    : "bg-red-500/20 text-red-300"
+                                }`}
+                              >
+                                {item.sucesso ? "sucesso" : "falha"}
+                              </span>
+                            </div>
+
+                            <p className="mt-2 text-sm text-slate-400">
+                              {formatarData(item.criado_em)} - IP:{" "}
+                              {item.ip || "nao identificado"} - {item.perfil}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}

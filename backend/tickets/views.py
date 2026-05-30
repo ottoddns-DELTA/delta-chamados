@@ -39,6 +39,44 @@ def registrar_acao(request, acao, detalhe=''):
     )
 
 
+def snapshot_chamado(chamado):
+    return {
+        'Titulo': chamado.titulo,
+        'Descricao': chamado.descricao,
+        'Condominio': chamado.condominio.nome if chamado.condominio else '',
+        'Urgente': 'sim' if chamado.urgente else 'nao',
+        'Status': chamado.status,
+        'Foto': 'sim' if chamado.imagem else 'nao',
+        'Feito': chamado.descricao_resolucao or '',
+    }
+
+
+def montar_detalhe_edicao_chamado(chamado, antes, depois):
+    campos_alterados = [
+        campo
+        for campo, valor_anterior in antes.items()
+        if str(valor_anterior) != str(depois.get(campo, ''))
+    ]
+
+    if not campos_alterados:
+        return f'Chamado #{chamado.id}: sem alteracoes relevantes.'
+
+    linhas = [
+        f'Chamado #{chamado.id}: {chamado.titulo}',
+        'Original:',
+    ]
+
+    for campo in campos_alterados:
+        linhas.append(f'- {campo}: {antes.get(campo) or "-"}')
+
+    linhas.append('Editado:')
+
+    for campo in campos_alterados:
+        linhas.append(f'- {campo}: {depois.get(campo) or "-"}')
+
+    return '\n'.join(linhas)
+
+
 def melhorar_texto_local(texto):
     texto_limpo = ' '.join(texto.split())
 
@@ -253,6 +291,10 @@ class ChamadoViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         novo_status = self.request.data.get('status')
         status_anterior = serializer.instance.status
+        chamado_antes = Chamado.objects.select_related(
+            'condominio',
+        ).get(pk=serializer.instance.pk)
+        dados_antes = snapshot_chamado(chamado_antes)
 
         if (
             perfil_usuario(self.request.user) == MONITORAMENTO
@@ -271,10 +313,18 @@ class ChamadoViewSet(viewsets.ModelViewSet):
             campos_extras['assumido_por'] = None
 
         chamado = serializer.save(**campos_extras)
+        chamado_atualizado = Chamado.objects.select_related(
+            'condominio',
+        ).get(pk=chamado.pk)
+        dados_depois = snapshot_chamado(chamado_atualizado)
         registrar_acao(
             self.request,
             'editou_chamado',
-            f'Chamado #{chamado.id}: {chamado.titulo}',
+            montar_detalhe_edicao_chamado(
+                chamado_atualizado,
+                dados_antes,
+                dados_depois,
+            ),
         )
 
         if novo_status == 'andamento' and status_anterior != 'andamento':
