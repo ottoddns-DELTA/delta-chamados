@@ -1097,12 +1097,15 @@ export default function Home() {
     setUsuarioLogado(data.user);
     setAba("chamados");
     setAbaAdmin("usuarios");
+    setMenuUsuarioAberto(false);
     setLogado(true);
     setErroLogin("");
     setSenha("");
   }
 
   function sair() {
+    setMenuUsuarioAberto(false);
+    setModalSenhaAberto(false);
     localStorage.removeItem("delta-logado");
     localStorage.removeItem("delta-token");
     localStorage.removeItem("delta-user");
