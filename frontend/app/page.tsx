@@ -926,26 +926,34 @@ export default function Home() {
 
   if (!logado) {
     return (
-      <main className="min-h-screen bg-[#0F172A] text-white">
-        <div className="grid min-h-screen lg:grid-cols-[1.1fr_0.9fr]">
-          <section className="flex items-center px-6 py-10 sm:px-10 lg:px-16">
-            <div className="w-full max-w-md">
-              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-blue-300">
-                Delta Chamados
-              </p>
+      <main className="min-h-screen bg-[#0B111D] p-4 text-white sm:p-6">
+        <div className="mx-auto grid min-h-[calc(100vh-2rem)] max-w-6xl overflow-hidden rounded-[28px] border border-slate-700/50 bg-[#111827] shadow-2xl shadow-black/40 sm:min-h-[calc(100vh-3rem)] lg:grid-cols-[1.05fr_0.95fr]">
+          <section className="flex items-center bg-[#1F2937]/70 px-6 py-10 sm:px-10 lg:px-16">
+            <div className="mx-auto w-full max-w-md">
+              <div className="mb-8 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-black shadow-lg shadow-black/40">
+                  <span className="h-0 w-0 border-x-[9px] border-b-[16px] border-x-transparent border-b-white" />
+                </div>
 
-              <h1 className="mb-4 text-4xl font-bold leading-tight sm:text-5xl">
-                Acesso ao painel
-              </h1>
+                <p className="text-xl font-semibold tracking-tight">
+                  Delta Chamados
+                </p>
+              </div>
 
-              <p className="mb-8 text-base leading-7 text-slate-400">
-                Entre para acompanhar chamados, condomínios e atendimentos em
-                andamento.
-              </p>
+              <div className="mb-7">
+                <h1 className="mb-3 text-3xl font-bold leading-tight sm:text-4xl">
+                  Acesso ao painel
+                </h1>
 
-              <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-2xl">
+                <p className="max-w-sm text-sm leading-6 text-slate-400">
+                  Entre para acompanhar chamados, condomínios e atendimentos em
+                  andamento.
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-slate-600/60 bg-[#162131]/90 p-5 shadow-2xl shadow-black/30 backdrop-blur">
                 <div className="grid gap-4">
-                  <label className="grid gap-2 text-sm font-medium text-slate-300">
+                  <label className="grid gap-2 text-xs font-medium text-slate-300">
                     Usuário
                     <input
                       type="text"
@@ -956,12 +964,12 @@ export default function Home() {
                           entrar();
                         }
                       }}
-                      className="rounded-md border border-slate-700 bg-[#0F172A] px-4 py-3 text-white outline-none transition focus:border-emerald-500"
+                      className="rounded-md border border-slate-600 bg-[#0F172A] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-500"
                       placeholder="Digite seu usuário"
                     />
                   </label>
 
-                  <label className="grid gap-2 text-sm font-medium text-slate-300">
+                  <label className="grid gap-2 text-xs font-medium text-slate-300">
                     Senha
                     <input
                       type="password"
@@ -972,7 +980,7 @@ export default function Home() {
                           entrar();
                         }
                       }}
-                      className="rounded-md border border-slate-700 bg-[#0F172A] px-4 py-3 text-white outline-none transition focus:border-emerald-500"
+                      className="rounded-md border border-slate-600 bg-[#0F172A] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-500"
                       placeholder="Digite sua senha"
                     />
                   </label>
@@ -985,7 +993,7 @@ export default function Home() {
 
                   <button
                     onClick={entrar}
-                    className="rounded-md bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-500"
+                    className="rounded-md bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500"
                   >
                     Entrar
                   </button>
@@ -994,21 +1002,64 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="hidden border-l border-slate-800 bg-[#111827] lg:block">
-            <div className="flex h-full flex-col justify-between p-12">
+          <section className="relative hidden overflow-hidden border-l border-slate-800 bg-[#0F172A] lg:block">
+            <div className="absolute inset-0 opacity-40 [background-image:linear-gradient(120deg,rgba(148,163,184,0.12)_1px,transparent_1px),linear-gradient(210deg,rgba(148,163,184,0.08)_1px,transparent_1px)] [background-size:80px_80px,110px_110px]" />
+
+            <div className="relative flex h-full flex-col justify-between p-12">
               <div>
-                <div className="mb-8 h-12 w-12 rounded-lg bg-blue-500" />
-                <h2 className="max-w-sm text-3xl font-semibold leading-tight">
+                <h2 className="max-w-sm text-3xl font-bold leading-tight">
                   Organização simples para a rotina técnica dos condomínios.
                 </h2>
               </div>
 
-              <div className="grid gap-4 text-sm text-slate-400">
-                <div className="rounded-lg border border-slate-700 bg-[#0F172A] p-5">
-                  Chamados abertos, urgentes e resolvidos em um só painel.
+              <div className="absolute right-[-72px] top-28 w-[390px] rotate-[-13deg] rounded-[18px] border border-slate-600/50 bg-[#111827]/90 p-5 shadow-2xl shadow-black/50">
+                <div className="mb-5 flex items-center justify-between">
+                  <div className="h-3 w-28 rounded-full bg-slate-600" />
+                  <div className="h-8 w-8 rounded-full border border-emerald-400/50" />
                 </div>
-                <div className="rounded-lg border border-slate-700 bg-[#0F172A] p-5">
-                  Registro com descrição, condomínio e foto da ocorrência.
+                <div className="grid grid-cols-[100px_1fr] gap-4">
+                  <div className="grid gap-3">
+                    <div className="h-9 rounded-md bg-slate-700/80" />
+                    <div className="h-9 rounded-md bg-slate-800" />
+                    <div className="h-9 rounded-md bg-slate-800" />
+                    <div className="h-9 rounded-md bg-slate-800" />
+                  </div>
+                  <div className="grid gap-4">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="h-20 rounded-md border border-slate-600 bg-slate-800/80" />
+                      <div className="h-20 rounded-md border border-slate-600 bg-slate-800/80" />
+                      <div className="h-20 rounded-md border border-slate-600 bg-slate-800/80" />
+                    </div>
+                    <div className="h-28 rounded-md border border-slate-600 bg-slate-800/80 p-4">
+                      <div className="mb-4 h-3 w-28 rounded-full bg-slate-600" />
+                      <div className="h-12 rounded-md border border-emerald-400/40 bg-emerald-500/10" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative z-10 grid gap-4">
+                <div className="max-w-md rounded-lg border border-slate-600/60 bg-slate-700/40 p-4 shadow-xl shadow-black/20 backdrop-blur">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-600/80 text-emerald-300">
+                      <MenuIcon tipo="clock" />
+                    </div>
+                    <p className="text-sm leading-5 text-slate-100">
+                      Acompanhe chamados, vistorias e manutenções em tempo real.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="max-w-md rounded-lg border border-slate-600/60 bg-slate-700/40 p-4 shadow-xl shadow-black/20 backdrop-blur">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-600/80 text-blue-300">
+                      <MenuIcon tipo="building" />
+                    </div>
+                    <p className="text-sm leading-5 text-slate-100">
+                      Gestão completa de condomínios e equipes técnicas em um só
+                      lugar.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
