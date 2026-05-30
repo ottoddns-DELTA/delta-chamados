@@ -1990,12 +1990,12 @@ export default function Home() {
             )}
 
             {aba === "chamados" && (
-                  <div className="mb-8 rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-2xl">
-                    <h2 className="mb-5 text-xl font-semibold">
+                  <div className="mb-6 rounded-lg border border-slate-700/70 bg-[#1F2937] p-5 shadow-2xl">
+                    <h2 className="mb-4 text-lg font-semibold">
                       Novo Chamado
                     </h2>
 
-                    <div className="grid gap-5">
+                    <div className="grid gap-4">
                       <label className="grid gap-2 text-sm font-medium text-slate-300">
                         Titulo do Chamado
                         <input
@@ -2003,7 +2003,7 @@ export default function Home() {
                         placeholder="Título"
                         value={titulo}
                         onChange={(event) => setTitulo(event.target.value)}
-                        className="rounded-md border border-slate-700 bg-[#0F172A] p-3 text-white outline-none transition focus:border-emerald-500"
+                        className="rounded-md border border-slate-700 bg-[#0F172A] px-3 py-2.5 text-white outline-none transition focus:border-emerald-500"
                       />
                       </label>
 
@@ -2017,7 +2017,7 @@ export default function Home() {
                         value={descricao}
                         onChange={(event) => setDescricao(event.target.value)}
                         spellCheck
-                        className="min-h-28 w-full rounded-md border border-slate-700 bg-[#0F172A] p-3 pr-16 text-white outline-none transition focus:border-emerald-500"
+                        className="min-h-24 w-full rounded-md border border-slate-700 bg-[#0F172A] p-3 pr-16 text-white outline-none transition focus:border-emerald-500"
                       />
 
                         <button
@@ -2043,7 +2043,7 @@ export default function Home() {
                       <select
                         value={condominio}
                         onChange={(event) => setCondominio(event.target.value)}
-                        className="rounded-md border border-slate-700 bg-[#0F172A] p-3 text-white outline-none transition focus:border-emerald-500"
+                        className="rounded-md border border-slate-700 bg-[#0F172A] px-3 py-2.5 text-white outline-none transition focus:border-emerald-500"
                       >
                         <option value="">Selecione o condomínio</option>
 
@@ -2055,7 +2055,7 @@ export default function Home() {
                       </select>
                       </label>
 
-                      <label className="flex items-center gap-3 rounded-md border border-slate-700 bg-[#0F172A] p-3 text-white">
+                      <label className="flex items-center gap-3 rounded-md border border-slate-700 bg-[#0F172A] px-3 py-2.5 text-white">
                         <input
                           type="checkbox"
                           checked={urgente}
@@ -2068,7 +2068,7 @@ export default function Home() {
                         <span>Este chamado é urgente</span>
                       </label>
 
-                      <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-slate-500 bg-[#0F172A] p-6 text-center text-white transition hover:border-slate-300">
+                      <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-slate-500 bg-[#0F172A] p-5 text-center text-white transition hover:border-slate-300">
                         <CameraIcon />
 
                         <span className="font-medium">
