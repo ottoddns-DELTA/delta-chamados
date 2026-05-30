@@ -14,6 +14,7 @@
     "expo": "latest",
     "expo-asset": "latest",
     "expo-device": "latest",
+    "expo-image-picker": "latest",
     "expo-notifications": "latest",
     "expo-status-bar": "latest",
     "react": "19.2.3",

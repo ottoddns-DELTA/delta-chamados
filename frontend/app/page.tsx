@@ -49,6 +49,7 @@ type Chamado = {
   editado_por_nome?: string;
   urgente: boolean;
   imagem?: string | null;
+  imagem_resolucao?: string | null;
   status: "aberto" | "andamento" | "resolvido";
   criado_em?: string;
   atualizado_em?: string;
@@ -1216,6 +1217,7 @@ export default function Home() {
               <div><dt>Ultima edicao</dt><dd>${escaparHtml(chamado.editado_por_nome ? formatarData(chamado.atualizado_em) : "Nao editado")}</dd></div>
               <div><dt>Resolvido em</dt><dd>${escaparHtml(formatarData(chamado.resolvido_em))}</dd></div>
               <div><dt>Feito</dt><dd>${escaparHtml(chamado.descricao_resolucao || "Nao informado")}</dd></div>
+              <div><dt>Foto da resolucao</dt><dd>${escaparHtml(chamado.imagem_resolucao ? "sim" : "nao")}</dd></div>
             </dl>
           </article>
         `
@@ -1345,6 +1347,9 @@ export default function Home() {
       `Descricao: ${chamado.descricao}`,
       chamado.descricao_resolucao
         ? `Feito: ${chamado.descricao_resolucao}`
+        : "",
+      chamado.imagem_resolucao
+        ? `Foto da resolucao: ${chamado.imagem_resolucao}`
         : "",
       chamado.criado_em ? `Aberto em: ${formatarData(chamado.criado_em)}` : "",
       chamado.resolvido_em
@@ -3158,6 +3163,23 @@ export default function Home() {
                                 {chamado.descricao_resolucao}
                               </span>
                             </button>
+                          )}
+
+                        {chamado.status === "resolvido" &&
+                          chamado.imagem_resolucao && (
+                            <a
+                              href={chamado.imagem_resolucao}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mb-3 block rounded-lg border border-emerald-300/20 bg-[#0F172A] p-2"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={chamado.imagem_resolucao}
+                                alt="Foto da resolucao"
+                                className="max-h-64 w-full rounded-md object-contain"
+                              />
+                            </a>
                           )}
 
                         {chamado.imagem && (

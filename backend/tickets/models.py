@@ -75,6 +75,12 @@ class Chamado(models.Model):
         null=True
     )
 
+    imagem_resolucao = models.ImageField(
+        upload_to='resolucoes/',
+        blank=True,
+        null=True
+    )
+
     status = models.CharField(
         max_length=20,
         choices=STATUS,
@@ -127,11 +133,15 @@ class Chamado(models.Model):
         self.otimizar_imagem()
 
     def otimizar_imagem(self):
-        if not self.imagem:
+        self.otimizar_arquivo_imagem(self.imagem)
+        self.otimizar_arquivo_imagem(self.imagem_resolucao)
+
+    def otimizar_arquivo_imagem(self, campo_imagem):
+        if not campo_imagem:
             return
 
         try:
-            imagem = Image.open(self.imagem.path)
+            imagem = Image.open(campo_imagem.path)
             imagem = ImageOps.exif_transpose(imagem)
 
             if (
@@ -146,10 +156,10 @@ class Chamado(models.Model):
             if formato in ['JPEG', 'JPG']:
                 if imagem.mode not in ['RGB', 'L']:
                     imagem = imagem.convert('RGB')
-                imagem.save(self.imagem.path, quality=82, optimize=True)
+                imagem.save(campo_imagem.path, quality=82, optimize=True)
                 return
 
-            imagem.save(self.imagem.path, optimize=True)
+            imagem.save(campo_imagem.path, optimize=True)
         except Exception:
             return
 

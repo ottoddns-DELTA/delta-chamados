@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
+import * as ImagePicker from "expo-image-picker";
 import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -56,6 +57,7 @@ type Chamado = {
   assumido_por_nome?: string;
   condominio: number;
   imagem?: string | null;
+  imagem_resolucao?: string | null;
   urgente: boolean;
   status: "aberto" | "andamento" | "resolvido";
   criado_em?: string;
@@ -70,6 +72,12 @@ type LoginResponse = {
 };
 
 type PushEstado = "verificando" | "ativo" | "erro";
+
+type ImagemSelecionada = {
+  uri: string;
+  name: string;
+  type: string;
+};
 
 const APP_MARK = require("./assets/icon.png");
 
@@ -129,6 +137,8 @@ export default function App() {
   const [chamadoParaResolver, setChamadoParaResolver] =
     useState<Chamado | null>(null);
   const [descricaoResolucao, setDescricaoResolucao] = useState("");
+  const [imagemResolucao, setImagemResolucao] =
+    useState<ImagemSelecionada | null>(null);
   const [melhorandoTexto, setMelhorandoTexto] = useState(false);
   const pushRegistroIniciado = useRef(false);
   const expoPushToken = useRef("");
@@ -481,11 +491,87 @@ export default function App() {
   function abrirResolucao(chamado: Chamado) {
     setChamadoParaResolver(chamado);
     setDescricaoResolucao(chamado.descricao_resolucao || "");
+    setImagemResolucao(null);
   }
 
   function cancelarResolucao() {
     setChamadoParaResolver(null);
     setDescricaoResolucao("");
+    setImagemResolucao(null);
+  }
+
+  function imagemParaEnvio(
+    asset: ImagePicker.ImagePickerAsset
+  ): ImagemSelecionada {
+    const nomeArquivo =
+      asset.fileName ||
+      `resolucao-${Date.now()}.${asset.uri.split(".").pop() || "jpg"}`;
+
+    return {
+      uri: asset.uri,
+      name: nomeArquivo,
+      type: asset.mimeType || "image/jpeg",
+    };
+  }
+
+  async function selecionarFotoResolucao(origem: "camera" | "galeria") {
+    const permissao =
+      origem === "camera"
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissao.granted) {
+      Alert.alert(
+        "Permissao necessaria",
+        "Libere o acesso para anexar a foto da resolucao."
+      );
+      return;
+    }
+
+    const resultado =
+      origem === "camera"
+        ? await ImagePicker.launchCameraAsync({
+            allowsEditing: false,
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.75,
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            allowsEditing: false,
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.75,
+          });
+
+    if (resultado.canceled || !resultado.assets[0]) {
+      return;
+    }
+
+    setImagemResolucao(imagemParaEnvio(resultado.assets[0]));
+  }
+
+  function abrirOpcoesFotoResolucao() {
+    Alert.alert("Foto da resolucao", "Adicionar uma foto do servico pronto.", [
+      {
+        text: "Camera",
+        onPress: () => selecionarFotoResolucao("camera"),
+      },
+      {
+        text: "Galeria",
+        onPress: () => selecionarFotoResolucao("galeria"),
+      },
+      ...(imagemResolucao
+        ? [
+            {
+              text: "Remover foto",
+              style: "destructive" as const,
+              onPress: () => setImagemResolucao(null),
+            },
+          ]
+        : []),
+      {
+        text: "Cancelar",
+        style: "cancel",
+      },
+    ]);
   }
 
   async function resolverChamado() {
@@ -495,18 +581,23 @@ export default function App() {
     }
 
     try {
+      const formData = new FormData();
+      formData.append("status", "resolvido");
+      formData.append("descricao_resolucao", descricaoResolucao.trim());
+
+      if (imagemResolucao) {
+        formData.append(
+          "imagem_resolucao",
+          imagemResolucao as unknown as Blob
+        );
+      }
+
       const response = await fetch(
         `${API_URL}/api/chamados/${chamadoParaResolver.id}/`,
         {
           method: "PATCH",
-          headers: {
-            ...headers,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            status: "resolvido",
-            descricao_resolucao: descricaoResolucao.trim(),
-          }),
+          headers,
+          body: formData,
         }
       );
 
@@ -702,6 +793,31 @@ export default function App() {
               value={descricaoResolucao}
               onChangeText={setDescricaoResolucao}
             />
+
+            <TouchableOpacity
+              style={styles.resolutionPhotoButton}
+              onPress={abrirOpcoesFotoResolucao}
+            >
+              <Text style={styles.resolutionPhotoIcon}>+</Text>
+              <View style={styles.resolutionPhotoTextBox}>
+                <Text style={styles.resolutionPhotoTitle}>
+                  Foto da resolucao
+                </Text>
+                <Text style={styles.resolutionPhotoSubtitle}>
+                  {imagemResolucao
+                    ? imagemResolucao.name
+                    : "Adicionar foto do servico pronto"}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {imagemResolucao ? (
+              <Image
+                source={{ uri: imagemResolucao.uri }}
+                style={styles.resolutionPreview}
+                resizeMode="cover"
+              />
+            ) : null}
 
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -1173,6 +1289,46 @@ const styles = StyleSheet.create({
     marginTop: 14,
     padding: 14,
     textAlignVertical: "top",
+  },
+  resolutionPhotoButton: {
+    alignItems: "center",
+    backgroundColor: "#09090b",
+    borderColor: "#3f3f46",
+    borderRadius: 8,
+    borderStyle: "dashed",
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 12,
+    padding: 14,
+  },
+  resolutionPhotoIcon: {
+    color: "#22c55e",
+    fontSize: 28,
+    fontWeight: "800",
+    lineHeight: 30,
+  },
+  resolutionPhotoTextBox: {
+    flex: 1,
+  },
+  resolutionPhotoTitle: {
+    color: "#f8fafc",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  resolutionPhotoSubtitle: {
+    color: "#a1a1aa",
+    fontSize: 12,
+    marginTop: 3,
+  },
+  resolutionPreview: {
+    backgroundColor: "#09090b",
+    borderColor: "#27272a",
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 150,
+    marginTop: 10,
+    width: "100%",
   },
   modalActions: {
     flexDirection: "row",
