@@ -61,6 +61,87 @@ type AccessLog = {
   criado_em: string;
 };
 
+function MenuIcon({
+  tipo,
+}: {
+  tipo: "plus" | "clock" | "history" | "building" | "settings";
+}) {
+  const common = {
+    className: "h-5 w-5 shrink-0",
+    fill: "none",
+    stroke: "currentColor",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    strokeWidth: 1.8,
+    viewBox: "0 0 24 24",
+  };
+
+  if (tipo === "plus") {
+    return (
+      <svg {...common}>
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+    );
+  }
+
+  if (tipo === "clock") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="M12 8v5l3 2" />
+      </svg>
+    );
+  }
+
+  if (tipo === "history") {
+    return (
+      <svg {...common}>
+        <path d="M4 12a8 8 0 1 0 2.35-5.65" />
+        <path d="M4 5v5h5" />
+        <path d="M12 8v5l3 2" />
+      </svg>
+    );
+  }
+
+  if (tipo === "building") {
+    return (
+      <svg {...common}>
+        <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16" />
+        <path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1" />
+        <path d="M3 21h18" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...common}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2 2 0 1 1-2.82 2.82l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.08 1.65V21a2 2 0 1 1-4 0v-.06A1.8 1.8 0 0 0 8.8 19.3a1.8 1.8 0 0 0-1.98.36l-.04.04a2 2 0 1 1-2.82-2.82l.04-.04A1.8 1.8 0 0 0 4.36 15a1.8 1.8 0 0 0-1.65-1.08H2.65a2 2 0 1 1 0-4h.06A1.8 1.8 0 0 0 4.36 8.8a1.8 1.8 0 0 0-.36-1.98l-.04-.04a2 2 0 1 1 2.82-2.82l.04.04A1.8 1.8 0 0 0 8.8 4.36a1.8 1.8 0 0 0 1.08-1.65V2.65a2 2 0 1 1 4 0v.06A1.8 1.8 0 0 0 15 4.36a1.8 1.8 0 0 0 1.98-.36l.04-.04a2 2 0 1 1 2.82 2.82l-.04.04A1.8 1.8 0 0 0 19.4 8.8a1.8 1.8 0 0 0 1.65 1.08h.06a2 2 0 1 1 0 4h-.06A1.8 1.8 0 0 0 19.4 15Z" />
+    </svg>
+  );
+}
+
+function CameraIcon() {
+  return (
+    <svg
+      className="h-10 w-10 text-slate-400"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.6}
+      viewBox="0 0 24 24"
+    >
+      <path d="M4 8a2 2 0 0 1 2-2h2l1.6-2h4.8L16 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
+      <circle cx="12" cy="12.5" r="3.5" />
+    </svg>
+  );
+}
+
+function CampoObrigatorio() {
+  return <span className="text-red-500">*</span>;
+}
+
 function chamadoEstaNoHistorico(chamado: Chamado) {
   if (chamado.status !== "resolvido") {
     return false;
@@ -195,6 +276,16 @@ export default function Home() {
     usuarioLogado?.perfil === "monitoramento";
 
   const podeExcluirCondominios = usuarioLogado?.perfil === "admin";
+
+  const perfilLabel =
+    usuarioLogado?.perfil === "admin"
+      ? "Admin"
+      : usuarioLogado?.perfil === "tecnico"
+        ? "Tecnico"
+        : "Monitoramento";
+  const inicialUsuario = (usuarioLogado?.nome || usuarioLogado?.username || "U")
+    .charAt(0)
+    .toUpperCase();
 
   const imagemPreview = useMemo(
     () => (imagem ? URL.createObjectURL(imagem) : ""),
@@ -928,7 +1019,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-white">
+    <main className="min-h-screen bg-[#0F172A] text-white">
       {mensagemPopup && (
         <div className="fixed left-1/2 top-5 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-lg border border-green-500/40 bg-green-950/95 px-5 py-4 text-center font-semibold text-green-100 shadow-2xl shadow-black/40">
           {mensagemPopup}
@@ -982,7 +1073,7 @@ export default function Home() {
       )}
 
       <div className="flex min-h-screen flex-col lg:flex-row">
-        <aside className="border-b border-zinc-800 bg-black p-5 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r lg:p-4">
+        <aside className="border-b border-slate-800 bg-[#111827] p-5 lg:min-h-screen lg:w-64 lg:border-b-0 lg:border-r lg:p-4">
           <div className="mb-8 flex items-center justify-between gap-4 px-2 pt-2">
             <div className="flex h-14 w-52 items-center">
               <Image
@@ -1003,48 +1094,52 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="mb-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+          <div className="mb-8 grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
             <button
               onClick={() => setAba("chamados")}
-              className={`rounded-md p-3 text-left font-semibold transition ${
+              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium transition ${
                 aba === "chamados"
-                  ? "bg-white text-black"
-                  : "bg-zinc-900 text-white hover:bg-zinc-800"
+                  ? "bg-white text-slate-950 shadow-sm"
+                  : "text-slate-300 hover:bg-slate-800/70 hover:text-white"
               }`}
             >
-              + Abrir Chamado
+              <MenuIcon tipo="plus" />
+              Abrir Chamado
             </button>
 
             <button
               onClick={() => setAba("andamento")}
-              className={`rounded-md p-3 text-left font-semibold transition ${
+              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium transition ${
                 aba === "andamento"
-                  ? "bg-white text-black"
-                  : "bg-zinc-900 text-white hover:bg-zinc-800"
+                  ? "bg-white text-slate-950 shadow-sm"
+                  : "text-slate-300 hover:bg-slate-800/70 hover:text-white"
               }`}
             >
-              Em Atendimento
+              <MenuIcon tipo="clock" />
+              Em Andamento
             </button>
 
             <button
               onClick={() => setAba("historico")}
-              className={`rounded-md p-3 text-left font-semibold transition ${
+              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium transition ${
                 aba === "historico"
-                  ? "bg-white text-black"
-                  : "bg-zinc-900 text-white hover:bg-zinc-800"
+                  ? "bg-white text-slate-950 shadow-sm"
+                  : "text-slate-300 hover:bg-slate-800/70 hover:text-white"
               }`}
             >
+              <MenuIcon tipo="history" />
               Histórico
             </button>
 
             <button
               onClick={() => setAba("condominios")}
-              className={`rounded-md p-3 text-left font-semibold transition ${
+              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium transition ${
                 aba === "condominios"
-                  ? "bg-white text-black"
-                  : "bg-zinc-900 text-white hover:bg-zinc-800"
+                  ? "bg-white text-slate-950 shadow-sm"
+                  : "text-slate-300 hover:bg-slate-800/70 hover:text-white"
               }`}
             >
+              <MenuIcon tipo="building" />
               Condomínios
             </button>
 
@@ -1054,61 +1149,64 @@ export default function Home() {
                   setAba("admin");
                   carregarAdmin();
                 }}
-                className={`rounded-md p-3 text-left font-semibold transition ${
+                className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium transition ${
                   aba === "admin"
-                    ? "bg-white text-black"
-                    : "bg-zinc-900 text-white hover:bg-zinc-800"
+                    ? "bg-white text-slate-950 shadow-sm"
+                    : "text-slate-300 hover:bg-slate-800/70 hover:text-white"
                 }`}
               >
+                <MenuIcon tipo="settings" />
                 Administração
               </button>
             )}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-              <p className="text-sm text-zinc-400">Chamados Abertos</p>
-              <h2 className="text-3xl font-bold">{chamadosAbertos.length}</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+            <div className="rounded-md border border-slate-700/70 bg-[#1F2937] p-4">
+              <p className="text-xs text-slate-300">Chamados Abertos</p>
+              <h2 className="text-2xl font-bold text-emerald-500">
+                {chamadosAbertos.length}
+              </h2>
             </div>
 
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-              <p className="text-sm text-zinc-400">Em Atendimento</p>
-              <h2 className="text-3xl font-bold text-blue-500">
+            <div className="rounded-md border border-slate-700/70 bg-[#1F2937] p-4">
+              <p className="text-xs text-slate-300">Em Andamento</p>
+              <h2 className="text-2xl font-bold text-blue-500">
                 {chamadosEmAtendimento.length}
               </h2>
             </div>
 
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-              <p className="text-sm text-zinc-400">Urgentes</p>
-              <h2 className="text-3xl font-bold text-red-500">
+            <div className="rounded-md border border-slate-700/70 bg-[#1F2937] p-4">
+              <p className="text-xs text-slate-300">Urgentes</p>
+              <h2 className="text-2xl font-bold text-red-500">
                 {chamadosUrgentes.length}
               </h2>
             </div>
 
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-              <p className="text-sm text-zinc-400">Resolvidos</p>
-              <h2 className="text-3xl font-bold text-green-500">
+            <div className="rounded-md border border-slate-700/70 bg-[#1F2937] p-4">
+              <p className="text-xs text-slate-300">Resolvidos</p>
+              <h2 className="text-2xl font-bold text-emerald-500">
                 {chamadosResolvidos.length}
               </h2>
             </div>
 
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-              <p className="text-sm text-zinc-400">Condomínios</p>
-              <h2 className="text-3xl font-bold text-blue-500">
+            <div className="rounded-md border border-slate-700/70 bg-[#1F2937] p-4">
+              <p className="text-xs text-slate-300">Condomínios</p>
+              <h2 className="text-2xl font-bold text-blue-500">
                 {condominios.length}
               </h2>
             </div>
           </div>
         </aside>
 
-        <div className="flex-1 p-5 sm:p-8 lg:p-10">
+        <div className="flex-1 bg-[#0F172A] p-5 sm:p-8 lg:p-10">
           <div className="mx-auto max-w-5xl">
             <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h1 className="mb-2 text-4xl font-bold sm:text-5xl">
+                <h1 className="mb-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">
                   Delta Chamados
                 </h1>
-                <p className="text-zinc-400">
+                <p className="text-slate-400">
                   Gestão técnica de ocorrências
                   {usuarioLogado && ` - ${usuarioLogado.perfil}`}
                 </p>
@@ -1116,9 +1214,10 @@ export default function Home() {
 
               <button
                 onClick={sair}
-                className="hidden rounded-md border border-zinc-700 px-4 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white lg:block"
+                title="Sair"
+                className="hidden rounded-md border border-slate-700 bg-[#111827] px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-slate-500 hover:text-white lg:block"
               >
-                Sair
+                {perfilLabel} [{inicialUsuario}]
               </button>
             </div>
 
@@ -1497,27 +1596,34 @@ export default function Home() {
             {(aba === "chamados" || aba === "andamento" || aba === "historico") && (
               <>
                 {aba === "chamados" && (
-                  <div className="mb-8 rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
-                    <h2 className="mb-5 text-2xl font-semibold">
+                  <div className="mb-8 rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-2xl">
+                    <h2 className="mb-5 text-xl font-semibold">
                       Novo Chamado
                     </h2>
 
-                    <div className="grid gap-4">
-                      <input
+                    <div className="grid gap-5">
+                      <label className="grid gap-2 text-sm font-medium text-slate-300">
+                        Titulo do Chamado
+                        <input
                         type="text"
                         placeholder="Título"
                         value={titulo}
                         onChange={(event) => setTitulo(event.target.value)}
-                        className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                        className="rounded-md border border-slate-700 bg-[#0F172A] p-3 text-white outline-none transition focus:border-blue-400"
                       />
+                      </label>
 
+                      <label className="grid gap-2 text-sm font-medium text-slate-300">
+                        <span>
+                          Descricao Detalhada <CampoObrigatorio />
+                        </span>
                       <div className="relative">
                         <textarea
                         placeholder="Descrição"
                         value={descricao}
                         onChange={(event) => setDescricao(event.target.value)}
                         spellCheck
-                        className="min-h-28 w-full rounded-md border border-zinc-800 bg-zinc-950 p-4 pr-16 text-white outline-none transition focus:border-blue-400"
+                        className="min-h-28 w-full rounded-md border border-slate-700 bg-[#0F172A] p-3 pr-16 text-white outline-none transition focus:border-blue-400"
                       />
 
                         <button
@@ -1534,11 +1640,16 @@ export default function Home() {
                           {melhorandoTexto ? "..." : "Aa"}
                         </button>
                       </div>
+                      </label>
 
+                      <label className="grid gap-2 text-sm font-medium text-slate-300">
+                        <span>
+                          Selecione o Condominio <CampoObrigatorio />
+                        </span>
                       <select
                         value={condominio}
                         onChange={(event) => setCondominio(event.target.value)}
-                        className="rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white outline-none transition focus:border-blue-400"
+                        className="rounded-md border border-slate-700 bg-[#0F172A] p-3 text-white outline-none transition focus:border-blue-400"
                       >
                         <option value="">Selecione o condomínio</option>
 
@@ -1548,31 +1659,30 @@ export default function Home() {
                           </option>
                         ))}
                       </select>
+                      </label>
 
-                      <label className="flex items-center gap-3 rounded-md border border-zinc-800 bg-zinc-950 p-4 text-white">
+                      <label className="flex items-center gap-3 rounded-md border border-slate-700 bg-[#0F172A] p-3 text-white">
                         <input
                           type="checkbox"
                           checked={urgente}
                           onChange={(event) =>
                             setUrgente(event.target.checked)
                           }
-                          className="h-5 w-5"
+                          className="h-5 w-5 accent-emerald-500"
                         />
 
                         <span>Este chamado é urgente</span>
                       </label>
 
-                      <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-zinc-700 bg-zinc-950 p-6 text-white transition hover:border-white">
-                        <span className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-500">
-                          Foto
+                      <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-slate-500 bg-[#0F172A] p-6 text-center text-white transition hover:border-slate-300">
+                        <CameraIcon />
+
+                        <span className="font-medium">
+                          Arraste e solte ou clique para adicionar uma foto
                         </span>
 
-                        <span className="font-semibold">
-                          Clique aqui para adicionar uma foto
-                        </span>
-
-                        <span className="text-sm text-zinc-400">
-                          PNG, JPG ou JPEG
+                        <span className="text-sm text-slate-400">
+                          (PNG, JPG, JPEG)
                         </span>
 
                         <input
@@ -1621,7 +1731,7 @@ export default function Home() {
 
                       <button
                         onClick={criarChamado}
-                        className="rounded-md bg-white p-4 font-semibold text-black transition hover:bg-zinc-200"
+                        className="rounded-md bg-emerald-600 p-4 font-semibold text-white transition hover:bg-emerald-500"
                       >
                         Criar Chamado
                       </button>
