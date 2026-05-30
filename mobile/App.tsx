@@ -117,6 +117,8 @@ export default function App() {
   const [descricaoResolucao, setDescricaoResolucao] = useState("");
   const [melhorandoTexto, setMelhorandoTexto] = useState(false);
   const pushRegistroIniciado = useRef(false);
+  const expoPushToken = useRef("");
+  const eventosNotificacao = useRef<Set<string>>(new Set());
 
   const headers = useMemo(
     () => ({
@@ -214,6 +216,7 @@ export default function App() {
     const expoToken = await Notifications.getExpoPushTokenAsync(
       projectId ? { projectId } : undefined
     );
+    expoPushToken.current = expoToken.data;
 
     const response = await fetch(`${API_URL}/api/push-devices/`, {
       method: "POST",
@@ -224,6 +227,9 @@ export default function App() {
       body: JSON.stringify({
         token: expoToken.data,
         plataforma: "android",
+        modelo: Device.modelName || "",
+        fabricante: Device.manufacturer || "",
+        sistema: `${Device.osName || Platform.OS} ${Device.osVersion || ""}`,
       }),
     });
 
@@ -235,6 +241,44 @@ export default function App() {
     setPushEstado("ativo");
     setPushDetalhe("");
   }
+
+  const registrarEventoNotificacao = useCallback(
+    async (evento: "recebido" | "aberto", data?: Record<string, unknown>) => {
+      if (!token) {
+        return;
+      }
+
+      const notificationLogId = data?.notificationLogId;
+      const chamadoId = data?.chamadoId;
+      const chave = `${evento}-${notificationLogId || chamadoId || Date.now()}`;
+
+      if (eventosNotificacao.current.has(chave)) {
+        return;
+      }
+
+      eventosNotificacao.current.add(chave);
+
+      try {
+        await fetch(`${API_URL}/api/notification-logs/`, {
+          method: "POST",
+          headers: {
+            Authorization: `Token ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            evento,
+            notificationLogId,
+            chamado: chamadoId,
+            token: expoPushToken.current,
+            urgente: data?.urgente,
+          }),
+        });
+      } catch {
+        // O log nao pode atrapalhar o uso do app.
+      }
+    },
+    [token]
+  );
 
   async function entrar() {
     setErro("");
@@ -458,10 +502,22 @@ export default function App() {
     }
 
     const recebido = Notifications.addNotificationReceivedListener(
-      atualizarEmSeguida
+      (notificacao) => {
+        registrarEventoNotificacao(
+          "recebido",
+          notificacao.request.content.data
+        );
+        atualizarEmSeguida();
+      }
     );
     const clicado = Notifications.addNotificationResponseReceivedListener(
-      atualizarEmSeguida
+      (resposta) => {
+        registrarEventoNotificacao(
+          "aberto",
+          resposta.notification.request.content.data
+        );
+        atualizarEmSeguida();
+      }
     );
     const estado = AppState.addEventListener("change", (proximoEstado) => {
       if (proximoEstado === "active") {
@@ -472,6 +528,10 @@ export default function App() {
     Notifications.getLastNotificationResponseAsync()
       .then((resposta) => {
         if (resposta) {
+          registrarEventoNotificacao(
+            "aberto",
+            resposta.notification.request.content.data
+          );
           atualizarEmSeguida();
         }
       })
@@ -482,7 +542,7 @@ export default function App() {
       clicado.remove();
       estado.remove();
     };
-  }, [carregarChamados, token]);
+  }, [carregarChamados, registrarEventoNotificacao, token]);
 
   useEffect(() => {
     if (!token || pushRegistroIniciado.current) {

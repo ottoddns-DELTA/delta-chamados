@@ -17,7 +17,7 @@ type Aba =
   | "historico"
   | "condominios"
   | "admin";
-type AbaAdmin = "usuarios" | "accessLogs" | "actionLogs";
+type AbaAdmin = "usuarios" | "accessLogs" | "actionLogs" | "notificationLogs";
 
 type Condominio = {
   id: number;
@@ -82,6 +82,23 @@ type ActionLog = {
   acao: string;
   detalhe: string;
   ip?: string | null;
+  criado_em: string;
+};
+
+type NotificationLog = {
+  id: number;
+  usuario_nome?: string;
+  chamado_titulo?: string;
+  condominio_nome?: string;
+  evento: "enviado" | "recebido" | "aberto" | "falha";
+  titulo: string;
+  corpo: string;
+  urgente: boolean;
+  plataforma: string;
+  modelo: string;
+  fabricante: string;
+  sistema: string;
+  detalhe: string;
   criado_em: string;
 };
 
@@ -266,6 +283,33 @@ function formatarData(data?: string | null) {
   }).format(new Date(data));
 }
 
+function textoEventoNotificacao(evento: NotificationLog["evento"]) {
+  const textos = {
+    enviado: "Enviado",
+    recebido: "Recebido no app",
+    aberto: "Aberto pelo usuario",
+    falha: "Falha",
+  };
+
+  return textos[evento] ?? evento;
+}
+
+function classeEventoNotificacao(evento: NotificationLog["evento"]) {
+  if (evento === "recebido") {
+    return "bg-emerald-500/20 text-emerald-300";
+  }
+
+  if (evento === "aberto") {
+    return "bg-blue-500/20 text-blue-300";
+  }
+
+  if (evento === "falha") {
+    return "bg-red-500/20 text-red-300";
+  }
+
+  return "bg-slate-500/20 text-slate-300";
+}
+
 export default function Home() {
   const [logado, setLogado] = useState(
     () =>
@@ -306,6 +350,9 @@ export default function Home() {
   const [usuarios, setUsuarios] = useState<UsuarioSistema[]>([]);
   const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
   const [actionLogs, setActionLogs] = useState<ActionLog[]>([]);
+  const [notificationLogs, setNotificationLogs] = useState<NotificationLog[]>(
+    []
+  );
 
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -476,7 +523,12 @@ export default function Home() {
       return;
     }
 
-    const [usuariosResponse, logsResponse, actionLogsResponse] =
+    const [
+      usuariosResponse,
+      logsResponse,
+      actionLogsResponse,
+      notificationLogsResponse,
+    ] =
       await Promise.all([
       fetch(`${API_URL}/api/usuarios/`, {
         cache: "no-store",
@@ -487,6 +539,10 @@ export default function Home() {
         headers: authHeaders,
       }),
       fetch(`${API_URL}/api/action-logs/`, {
+        cache: "no-store",
+        headers: authHeaders,
+      }),
+      fetch(`${API_URL}/api/notification-logs/`, {
         cache: "no-store",
         headers: authHeaders,
       }),
@@ -502,6 +558,10 @@ export default function Home() {
 
     if (actionLogsResponse.ok) {
       setActionLogs((await actionLogsResponse.json()).slice(0, 30));
+    }
+
+    if (notificationLogsResponse.ok) {
+      setNotificationLogs((await notificationLogsResponse.json()).slice(0, 40));
     }
   }
 
@@ -1683,7 +1743,7 @@ export default function Home() {
                     Administração
                   </h2>
 
-                  <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="grid gap-3 sm:grid-cols-4">
                     <button
                       onClick={() => {
                         setAbaAdmin("usuarios");
@@ -1724,6 +1784,20 @@ export default function Home() {
                       }`}
                     >
                       Logs gerais
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setAbaAdmin("notificationLogs");
+                        carregarAdmin();
+                      }}
+                      className={`rounded-md p-3 text-left font-semibold transition ${
+                        abaAdmin === "notificationLogs"
+                          ? "bg-white text-black"
+                          : "bg-[#1F2937] text-slate-200 hover:bg-slate-700"
+                      }`}
+                    >
+                      Logs de notificacao
                     </button>
                   </div>
                 </div>
@@ -1941,6 +2015,80 @@ export default function Home() {
                           </p>
                         )}
                       </div>
+                  </div>
+                )}
+
+                {abaAdmin === "notificationLogs" && (
+                  <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-xl">
+                    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <h2 className="text-2xl font-semibold">
+                        Logs de notificacao
+                      </h2>
+
+                      <button
+                        onClick={carregarAdmin}
+                        className="rounded-md border border-slate-600 px-4 py-3 text-sm font-medium text-slate-300 transition hover:border-slate-400 hover:text-white"
+                      >
+                        Atualizar
+                      </button>
+                    </div>
+
+                    <div className="grid gap-3">
+                      {notificationLogs.map((item) => (
+                        <div
+                          key={item.id}
+                          className="rounded-md border border-slate-700 bg-[#0F172A] p-4"
+                        >
+                          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <p className="font-semibold">
+                                {item.usuario_nome || "sem usuario"}
+                              </p>
+                              <p className="text-sm text-slate-400">
+                                {item.condominio_nome || "sem condominio"}
+                                {item.chamado_titulo
+                                  ? ` - ${item.chamado_titulo}`
+                                  : ""}
+                              </p>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              {item.urgente && (
+                                <span className="rounded-full bg-red-500/20 px-3 py-1 text-sm font-medium text-red-300">
+                                  urgente
+                                </span>
+                              )}
+
+                              <span
+                                className={`rounded-full px-3 py-1 text-sm font-medium ${classeEventoNotificacao(
+                                  item.evento
+                                )}`}
+                              >
+                                {textoEventoNotificacao(item.evento)}
+                              </span>
+                            </div>
+                          </div>
+
+                          <p className="text-sm text-slate-300">
+                            {item.titulo || "Notificacao"}{" "}
+                            {item.corpo ? `- ${item.corpo}` : ""}
+                          </p>
+
+                          <p className="mt-3 text-sm text-slate-400">
+                            {formatarData(item.criado_em)} -{" "}
+                            {item.modelo || "modelo nao informado"}
+                            {item.fabricante ? ` (${item.fabricante})` : ""} -{" "}
+                            {item.sistema || item.plataforma || "sistema nao informado"}
+                          </p>
+                        </div>
+                      ))}
+
+                      {notificationLogs.length === 0 && (
+                        <p className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-sm text-slate-400">
+                          Nenhuma notificacao registrada.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
 

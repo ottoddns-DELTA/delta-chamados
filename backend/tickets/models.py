@@ -216,6 +216,21 @@ class PushDevice(models.Model):
         blank=True
     )
 
+    modelo = models.CharField(
+        max_length=120,
+        blank=True
+    )
+
+    fabricante = models.CharField(
+        max_length=120,
+        blank=True
+    )
+
+    sistema = models.CharField(
+        max_length=120,
+        blank=True
+    )
+
     ativo = models.BooleanField(default=True)
 
     criado_em = models.DateTimeField(auto_now_add=True)
@@ -224,3 +239,79 @@ class PushDevice(models.Model):
 
     def __str__(self):
         return f'{self.usuario.username} - {self.plataforma}'
+
+
+class NotificationLog(models.Model):
+
+    EVENTOS = [
+        ('enviado', 'Enviado'),
+        ('recebido', 'Recebido no app'),
+        ('aberto', 'Aberto pelo usuario'),
+        ('falha', 'Falha'),
+    ]
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='notification_logs'
+    )
+
+    device = models.ForeignKey(
+        PushDevice,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='notification_logs'
+    )
+
+    chamado = models.ForeignKey(
+        Chamado,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='notification_logs'
+    )
+
+    evento = models.CharField(
+        max_length=20,
+        choices=EVENTOS
+    )
+
+    titulo = models.CharField(
+        max_length=200,
+        blank=True
+    )
+
+    corpo = models.TextField(blank=True)
+
+    urgente = models.BooleanField(default=False)
+
+    plataforma = models.CharField(
+        max_length=40,
+        blank=True
+    )
+
+    modelo = models.CharField(
+        max_length=120,
+        blank=True
+    )
+
+    fabricante = models.CharField(
+        max_length=120,
+        blank=True
+    )
+
+    sistema = models.CharField(
+        max_length=120,
+        blank=True
+    )
+
+    detalhe = models.TextField(blank=True)
+
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        usuario = self.usuario.username if self.usuario else 'sem usuario'
+        return f'{self.evento} - {usuario} - {self.criado_em}'

@@ -9,12 +9,19 @@ from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .auth_utils import MONITORAMENTO, PERFIS, get_client_ip, perfil_usuario
-from .models import AccessLog, ActionLog, Chamado, Condominio, PushDevice
+from .models import (
+    AccessLog,
+    ActionLog,
+    Chamado,
+    Condominio,
+    NotificationLog,
+    PushDevice,
+)
 from .permissions import (
     AdminOnlyPermission,
     PerfilChamadoPermission,
@@ -26,6 +33,7 @@ from .serializers import (
     ActionLogSerializer,
     ChamadoSerializer,
     CondominioSerializer,
+    NotificationLogSerializer,
     PushDeviceSerializer,
     UserSerializer,
 )
@@ -542,12 +550,18 @@ class PushDeviceViewSet(viewsets.ModelViewSet):
 
         token = serializer.validated_data.get('token')
         plataforma = serializer.validated_data.get('plataforma', '')
+        modelo = serializer.validated_data.get('modelo', '')
+        fabricante = serializer.validated_data.get('fabricante', '')
+        sistema = serializer.validated_data.get('sistema', '')
 
         device, _ = PushDevice.objects.update_or_create(
             token=token,
             defaults={
                 'usuario': self.request.user,
                 'plataforma': plataforma,
+                'modelo': modelo,
+                'fabricante': fabricante,
+                'sistema': sistema,
                 'ativo': True,
             },
         )
@@ -560,3 +574,92 @@ class PushDeviceViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         instance.ativo = False
         instance.save(update_fields=['ativo', 'atualizado_em'])
+
+
+class NotificationLogViewSet(viewsets.ModelViewSet):
+
+    serializer_class = NotificationLogSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'head', 'options']
+
+    def get_queryset(self):
+        queryset = NotificationLog.objects.select_related(
+            'usuario',
+            'device',
+            'chamado',
+            'chamado__condominio',
+        ).order_by('-criado_em')
+
+        if perfil_usuario(self.request.user) == 'admin':
+            return queryset
+
+        return queryset.filter(usuario=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        if perfil_usuario(request.user) != 'admin':
+            raise PermissionDenied('Apenas administradores podem ver logs.')
+
+        return super().list(request, *args, **kwargs)
+
+    def create(self, request, *args, **kwargs):
+        evento = request.data.get('evento')
+
+        if evento not in ['recebido', 'aberto']:
+            return Response(
+                {'detail': 'Evento de notificacao invalido.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        chamado = None
+        chamado_id = request.data.get('chamado')
+
+        if chamado_id:
+            chamado = Chamado.objects.filter(id=chamado_id).first()
+
+        log_origem = None
+        log_origem_id = request.data.get('notificationLogId')
+
+        if log_origem_id:
+            log_origem = NotificationLog.objects.filter(
+                id=log_origem_id,
+                usuario=request.user
+            ).first()
+
+        device = None
+        token = request.data.get('token')
+
+        if token:
+            device = PushDevice.objects.filter(
+                token=token,
+                usuario=request.user
+            ).first()
+
+        if device is None and log_origem:
+            device = log_origem.device
+
+        if chamado is None and log_origem:
+            chamado = log_origem.chamado
+
+        titulo = log_origem.titulo if log_origem else request.data.get('titulo', '')
+        corpo = log_origem.corpo if log_origem else request.data.get('corpo', '')
+        urgente = log_origem.urgente if log_origem else bool(request.data.get('urgente'))
+
+        notification_log = NotificationLog.objects.create(
+            usuario=request.user,
+            device=device,
+            chamado=chamado,
+            evento=evento,
+            titulo=titulo,
+            corpo=corpo,
+            urgente=urgente,
+            plataforma=device.plataforma if device else '',
+            modelo=device.modelo if device else '',
+            fabricante=device.fabricante if device else '',
+            sistema=device.sistema if device else '',
+            detalhe=f'log_origem={log_origem.id}' if log_origem else '',
+        )
+
+        return Response(
+            self.get_serializer(notification_log).data,
+            status=status.HTTP_201_CREATED
+        )

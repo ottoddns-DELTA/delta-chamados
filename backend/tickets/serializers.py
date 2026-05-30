@@ -2,7 +2,14 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 
 from .auth_utils import perfil_usuario
-from .models import AccessLog, ActionLog, Chamado, Condominio, PushDevice
+from .models import (
+    AccessLog,
+    ActionLog,
+    Chamado,
+    Condominio,
+    NotificationLog,
+    PushDevice,
+)
 
 
 class CondominioSerializer(serializers.ModelSerializer):
@@ -135,6 +142,61 @@ class ActionLogSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class NotificationLogSerializer(serializers.ModelSerializer):
+
+    usuario_nome = serializers.CharField(
+        source='usuario.username',
+        read_only=True
+    )
+    chamado_titulo = serializers.CharField(
+        source='chamado.titulo',
+        read_only=True
+    )
+    condominio_nome = serializers.CharField(
+        source='chamado.condominio.nome',
+        read_only=True
+    )
+
+    class Meta:
+        model = NotificationLog
+        fields = [
+            'id',
+            'usuario',
+            'usuario_nome',
+            'device',
+            'chamado',
+            'chamado_titulo',
+            'condominio_nome',
+            'evento',
+            'titulo',
+            'corpo',
+            'urgente',
+            'plataforma',
+            'modelo',
+            'fabricante',
+            'sistema',
+            'detalhe',
+            'criado_em',
+        ]
+        read_only_fields = [
+            'id',
+            'usuario',
+            'usuario_nome',
+            'device',
+            'chamado_titulo',
+            'condominio_nome',
+            'titulo',
+            'corpo',
+            'urgente',
+            'plataforma',
+            'modelo',
+            'fabricante',
+            'sistema',
+            'detalhe',
+            'criado_em',
+        ]
+
+
 class PushDeviceSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -148,6 +210,9 @@ class PushDeviceSerializer(serializers.ModelSerializer):
             'id',
             'token',
             'plataforma',
+            'modelo',
+            'fabricante',
+            'sistema',
             'ativo',
             'criado_em',
             'atualizado_em',
