@@ -283,6 +283,15 @@ function formatarData(data?: string | null) {
   }).format(new Date(data));
 }
 
+function escaparHtml(texto?: string | number | null) {
+  return String(texto ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 function textoEventoNotificacao(evento: NotificationLog["evento"]) {
   const textos = {
     enviado: "Enviado",
@@ -430,6 +439,12 @@ export default function Home() {
     null
   );
   const [descricaoResolucao, setDescricaoResolucao] = useState("");
+  const [chamadosSelecionadosPdf, setChamadosSelecionadosPdf] = useState<
+    number[]
+  >([]);
+  const [descricaoCopiadaId, setDescricaoCopiadaId] = useState<number | null>(
+    null
+  );
 
   const [nomeCondominio, setNomeCondominio] = useState("");
   const [enderecoCondominio, setEnderecoCondominio] = useState("");
@@ -491,6 +506,11 @@ export default function Home() {
     () => chamados.filter(chamadoEstaNoHistorico),
     [chamados]
   );
+  const todosResolvidosSelecionados =
+    chamadosResolvidos.length > 0 &&
+    chamadosResolvidos.every((chamado) =>
+      chamadosSelecionadosPdf.includes(chamado.id)
+    );
 
   const podeIniciarAtendimento =
     usuarioLogado?.perfil === "admin" || usuarioLogado?.perfil === "tecnico";
@@ -980,6 +1000,179 @@ export default function Home() {
 
     cancelarResolucao();
     carregarChamados();
+  }
+
+  function alternarSelecaoPdf(id: number) {
+    setChamadosSelecionadosPdf((selecionados) =>
+      selecionados.includes(id)
+        ? selecionados.filter((item) => item !== id)
+        : [...selecionados, id]
+    );
+  }
+
+  function alternarTodosResolvidosPdf() {
+    if (todosResolvidosSelecionados) {
+      setChamadosSelecionadosPdf([]);
+      return;
+    }
+
+    setChamadosSelecionadosPdf(chamadosResolvidos.map((chamado) => chamado.id));
+  }
+
+  function exportarResolvidosPdf() {
+    const chamadosParaExportar = chamadosResolvidos.filter((chamado) =>
+      chamadosSelecionadosPdf.includes(chamado.id)
+    );
+
+    if (chamadosParaExportar.length === 0) {
+      alert("Selecione pelo menos um chamado resolvido para exportar.");
+      return;
+    }
+
+    const janela = window.open("", "_blank", "width=900,height=700");
+
+    if (!janela) {
+      alert("O navegador bloqueou a janela do PDF. Permita pop-ups e tente novamente.");
+      return;
+    }
+
+    const cards = chamadosParaExportar
+      .map(
+        (chamado) => `
+          <article class="card">
+            <div class="card-header">
+              <div>
+                <span class="label">Chamado #${escaparHtml(chamado.id)}</span>
+                <h2>${escaparHtml(chamado.titulo)}</h2>
+              </div>
+              <span class="status">${chamado.urgente ? "Urgente" : "Normal"}</span>
+            </div>
+            <p class="descricao">${escaparHtml(chamado.descricao)}</p>
+            <dl>
+              <div><dt>Condominio</dt><dd>${escaparHtml(chamado.condominio_nome || chamado.condominio)}</dd></div>
+              <div><dt>Aberto por</dt><dd>${escaparHtml(chamado.criado_por_nome || "nao informado")}</dd></div>
+              <div><dt>Aberto em</dt><dd>${escaparHtml(formatarData(chamado.criado_em))}</dd></div>
+              <div><dt>Resolvido em</dt><dd>${escaparHtml(formatarData(chamado.resolvido_em))}</dd></div>
+              <div><dt>Feito</dt><dd>${escaparHtml(chamado.descricao_resolucao || "Nao informado")}</dd></div>
+            </dl>
+          </article>
+        `
+      )
+      .join("");
+
+    janela.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Relatorio de Chamados Resolvidos</title>
+          <style>
+            * { box-sizing: border-box; }
+            body {
+              margin: 0;
+              padding: 32px;
+              color: #111827;
+              font-family: Arial, sans-serif;
+              background: #ffffff;
+            }
+            header {
+              border-bottom: 2px solid #0f172a;
+              margin-bottom: 24px;
+              padding-bottom: 16px;
+            }
+            h1 { margin: 0; font-size: 26px; }
+            .subtitle { margin-top: 6px; color: #475569; }
+            .card {
+              break-inside: avoid;
+              border: 1px solid #cbd5e1;
+              border-radius: 10px;
+              margin-bottom: 18px;
+              padding: 18px;
+            }
+            .card-header {
+              align-items: flex-start;
+              display: flex;
+              gap: 16px;
+              justify-content: space-between;
+            }
+            .label {
+              color: #64748b;
+              display: block;
+              font-size: 12px;
+              font-weight: 700;
+              letter-spacing: .06em;
+              margin-bottom: 6px;
+              text-transform: uppercase;
+            }
+            h2 { font-size: 20px; margin: 0; }
+            .status {
+              border: 1px solid #cbd5e1;
+              border-radius: 999px;
+              font-size: 12px;
+              font-weight: 700;
+              padding: 6px 10px;
+              text-transform: uppercase;
+            }
+            .descricao {
+              margin: 14px 0 18px;
+              white-space: pre-wrap;
+            }
+            dl {
+              display: grid;
+              gap: 10px;
+              margin: 0;
+            }
+            dt {
+              color: #64748b;
+              font-size: 12px;
+              font-weight: 700;
+              text-transform: uppercase;
+            }
+            dd {
+              margin: 3px 0 0;
+              white-space: pre-wrap;
+            }
+            @media print {
+              body { padding: 18mm; }
+              .card { page-break-inside: avoid; }
+            }
+          </style>
+        </head>
+        <body>
+          <header>
+            <h1>Delta Chamados - Resolvidos</h1>
+            <p class="subtitle">${chamadosParaExportar.length} chamado(s) exportado(s) em ${escaparHtml(formatarData(new Date().toISOString()))}</p>
+          </header>
+          ${cards}
+          <script>
+            window.onload = () => {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    janela.document.close();
+  }
+
+  async function copiarDescricaoResolucao(chamado: Chamado) {
+    if (!chamado.descricao_resolucao) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(chamado.descricao_resolucao);
+    } catch {
+      const campoTemporario = document.createElement("textarea");
+      campoTemporario.value = chamado.descricao_resolucao;
+      document.body.appendChild(campoTemporario);
+      campoTemporario.select();
+      document.execCommand("copy");
+      campoTemporario.remove();
+    }
+
+    setDescricaoCopiadaId(chamado.id);
+    window.setTimeout(() => setDescricaoCopiadaId(null), 1400);
   }
 
   async function iniciarAtendimento(id: number) {
@@ -2422,6 +2615,32 @@ export default function Home() {
               aba === "urgentes" ||
               aba === "historico") && (
                 <div className="grid gap-5">
+                  {aba === "historico" && (
+                    <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-4 shadow-xl">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <label className="flex items-center gap-3 text-sm font-medium text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={todosResolvidosSelecionados}
+                            onChange={alternarTodosResolvidosPdf}
+                            className="h-5 w-5 rounded accent-emerald-500"
+                          />
+                          <span>
+                            Selecionar todos os resolvidos (
+                            {chamadosSelecionadosPdf.length})
+                          </span>
+                        </label>
+
+                        <button
+                          onClick={exportarResolvidosPdf}
+                          className="rounded-md bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500"
+                        >
+                          Exportar PDF
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {chamados
                     .filter((chamado) =>
                       aba === "historico"
@@ -2615,9 +2834,25 @@ export default function Home() {
                         ) : (
                           <>
                         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <h2 className="text-2xl font-semibold">
-                            {chamado.titulo}
-                          </h2>
+                          <div className="flex items-center gap-3">
+                            {aba === "historico" && (
+                              <input
+                                type="checkbox"
+                                checked={chamadosSelecionadosPdf.includes(
+                                  chamado.id
+                                )}
+                                onChange={() =>
+                                  alternarSelecaoPdf(chamado.id)
+                                }
+                                className="h-5 w-5 rounded accent-emerald-500"
+                                title="Selecionar para exportar"
+                              />
+                            )}
+
+                            <h2 className="text-2xl font-semibold">
+                              {chamado.titulo}
+                            </h2>
+                          </div>
 
                           <div className="flex flex-wrap gap-2">
                             {chamado.urgente && (
@@ -2702,9 +2937,22 @@ export default function Home() {
                               )}
 
                             {chamado.descricao_resolucao && (
-                              <p className="mt-2 text-slate-200">
-                                Feito: {chamado.descricao_resolucao}
-                              </p>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  copiarDescricaoResolucao(chamado)
+                                }
+                                className="mt-2 block max-w-2xl rounded-md border border-transparent text-left text-slate-200 transition hover:border-slate-600 hover:bg-slate-900/40"
+                                title="Clique para copiar o texto feito pelo tecnico"
+                              >
+                                <span className="font-semibold">Feito:</span>{" "}
+                                {chamado.descricao_resolucao}
+                                <span className="ml-2 text-xs font-semibold text-emerald-300">
+                                  {descricaoCopiadaId === chamado.id
+                                    ? "Copiado"
+                                    : "Copiar"}
+                                </span>
+                              </button>
                             )}
 
                             {chamado.urgente ? (
