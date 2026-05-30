@@ -2616,27 +2616,43 @@ export default function Home() {
               aba === "historico") && (
                 <div className="grid gap-5">
                   {aba === "historico" && (
-                    <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-4 shadow-xl">
+                    <div className="rounded-lg border border-slate-700/70 bg-[#1F2937]/80 p-4 shadow-xl">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <label className="flex items-center gap-3 text-sm font-medium text-slate-200">
-                          <input
-                            type="checkbox"
-                            checked={todosResolvidosSelecionados}
-                            onChange={alternarTodosResolvidosPdf}
-                            className="h-5 w-5 rounded accent-emerald-500"
+                        <button
+                          type="button"
+                          onClick={alternarTodosResolvidosPdf}
+                          className={`inline-flex items-center gap-3 rounded-md border px-4 py-3 text-sm font-semibold transition ${
+                            todosResolvidosSelecionados
+                              ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-100"
+                              : "border-slate-700 bg-[#0F172A] text-slate-300 hover:border-slate-500 hover:text-white"
+                          }`}
+                        >
+                          <span
+                            className={`h-5 w-5 rounded border ${
+                              todosResolvidosSelecionados
+                                ? "border-emerald-300 bg-emerald-500"
+                                : "border-slate-500 bg-slate-900"
+                            }`}
                           />
                           <span>
-                            Selecionar todos os resolvidos (
-                            {chamadosSelecionadosPdf.length})
+                            {todosResolvidosSelecionados
+                              ? "Todos selecionados"
+                              : "Selecionar todos"}{" "}
+                            ({chamadosSelecionadosPdf.length})
                           </span>
-                        </label>
-
-                        <button
-                          onClick={exportarResolvidosPdf}
-                          className="rounded-md bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500"
-                        >
-                          Exportar PDF
                         </button>
+
+                        <div className="flex flex-col gap-2 sm:items-end">
+                          <button
+                            onClick={exportarResolvidosPdf}
+                            className="rounded-md bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] transition hover:bg-emerald-500 active:scale-[0.98]"
+                          >
+                            Exportar PDF
+                          </button>
+                          <span className="text-xs text-slate-400">
+                            Selecione os cards que entram no relatorio
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2655,7 +2671,12 @@ export default function Home() {
                       <div
                         key={chamado.id}
                         title={`Aberto por: ${chamado.criado_por_nome || "nao informado"}`}
-                        className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-xl"
+                        className={`relative rounded-lg border bg-[#1F2937] p-6 shadow-xl transition ${
+                          aba === "historico" &&
+                          chamadosSelecionadosPdf.includes(chamado.id)
+                            ? "border-emerald-400/70 shadow-[0_0_0_1px_rgba(16,185,129,0.18),0_20px_40px_rgba(15,23,42,0.35)]"
+                            : "border-slate-700/70"
+                        } ${aba === "historico" ? "pb-16" : ""}`}
                       >
                         {editandoChamadoId === chamado.id ? (
                           <div className="grid gap-4">
@@ -2834,25 +2855,9 @@ export default function Home() {
                         ) : (
                           <>
                         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="flex items-center gap-3">
-                            {aba === "historico" && (
-                              <input
-                                type="checkbox"
-                                checked={chamadosSelecionadosPdf.includes(
-                                  chamado.id
-                                )}
-                                onChange={() =>
-                                  alternarSelecaoPdf(chamado.id)
-                                }
-                                className="h-5 w-5 rounded accent-emerald-500"
-                                title="Selecionar para exportar"
-                              />
-                            )}
-
-                            <h2 className="text-2xl font-semibold">
-                              {chamado.titulo}
-                            </h2>
-                          </div>
+                          <h2 className="text-2xl font-semibold">
+                            {chamado.titulo}
+                          </h2>
 
                           <div className="flex flex-wrap gap-2">
                             {chamado.urgente && (
@@ -2942,12 +2947,12 @@ export default function Home() {
                                 onClick={() =>
                                   copiarDescricaoResolucao(chamado)
                                 }
-                                className="mt-2 block max-w-2xl rounded-md border border-transparent text-left text-slate-200 transition hover:border-slate-600 hover:bg-slate-900/40"
+                                className="mt-2 block max-w-2xl rounded-md border border-slate-700/60 bg-slate-900/30 px-3 py-2 text-left text-slate-200 transition hover:border-emerald-400/60 hover:bg-slate-900/60"
                                 title="Clique para copiar o texto feito pelo tecnico"
                               >
                                 <span className="font-semibold">Feito:</span>{" "}
                                 {chamado.descricao_resolucao}
-                                <span className="ml-2 text-xs font-semibold text-emerald-300">
+                                <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-300">
                                   {descricaoCopiadaId === chamado.id
                                     ? "Copiado"
                                     : "Copiar"}
@@ -2994,6 +2999,28 @@ export default function Home() {
                             )}
                           </div>
                         </div>
+
+                        {aba === "historico" && (
+                          <button
+                            type="button"
+                            onClick={() => alternarSelecaoPdf(chamado.id)}
+                            className={`absolute bottom-5 right-5 flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition ${
+                              chamadosSelecionadosPdf.includes(chamado.id)
+                                ? "border-emerald-400 bg-emerald-500/20 text-emerald-100"
+                                : "border-slate-600 bg-[#0F172A]/95 text-slate-300 hover:border-emerald-400/70 hover:text-white"
+                            }`}
+                            title="Selecionar para exportar"
+                          >
+                            <span
+                              className={`h-4 w-4 rounded border ${
+                                chamadosSelecionadosPdf.includes(chamado.id)
+                                  ? "border-emerald-300 bg-emerald-500"
+                                  : "border-slate-500"
+                              }`}
+                            />
+                            PDF
+                          </button>
+                        )}
                           </>
                         )}
                       </div>
