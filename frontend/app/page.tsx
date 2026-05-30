@@ -40,6 +40,7 @@ type Chamado = {
   condominio_nome?: string;
   criado_por_nome?: string;
   assumido_por_nome?: string;
+  editado_por_nome?: string;
   urgente: boolean;
   imagem?: string | null;
   status: "aberto" | "andamento" | "resolvido";
@@ -1064,6 +1065,8 @@ export default function Home() {
               <div><dt>Condominio</dt><dd>${escaparHtml(chamado.condominio_nome || chamado.condominio)}</dd></div>
               <div><dt>Aberto por</dt><dd>${escaparHtml(chamado.criado_por_nome || "nao informado")}</dd></div>
               <div><dt>Aberto em</dt><dd>${escaparHtml(formatarData(chamado.criado_em))}</dd></div>
+              <div><dt>Editado por</dt><dd>${escaparHtml(chamado.editado_por_nome || "Nao editado")}</dd></div>
+              <div><dt>Ultima edicao</dt><dd>${escaparHtml(chamado.editado_por_nome ? formatarData(chamado.atualizado_em) : "Nao editado")}</dd></div>
               <div><dt>Resolvido em</dt><dd>${escaparHtml(formatarData(chamado.resolvido_em))}</dd></div>
               <div><dt>Feito</dt><dd>${escaparHtml(chamado.descricao_resolucao || "Nao informado")}</dd></div>
             </dl>
@@ -2938,6 +2941,13 @@ export default function Home() {
                             <p>
                               Aberto em: {formatarData(chamado.criado_em)}
                             </p>
+
+                            {chamado.editado_por_nome && (
+                              <p className="font-semibold text-amber-200">
+                                Editado por: {chamado.editado_por_nome} em{" "}
+                                {formatarData(chamado.atualizado_em)}
+                              </p>
+                            )}
 
                             {chamado.assumido_por_nome && (
                               <p className="font-semibold text-blue-300">

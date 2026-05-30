@@ -59,6 +59,14 @@ class Chamado(models.Model):
         related_name='chamados_assumidos'
     )
 
+    editado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='chamados_editados'
+    )
+
     urgente = models.BooleanField(default=False)
 
     imagem = models.ImageField(

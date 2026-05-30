@@ -27,6 +27,7 @@ class ChamadoSerializer(serializers.ModelSerializer):
     )
     criado_por_nome = serializers.SerializerMethodField()
     assumido_por_nome = serializers.SerializerMethodField()
+    editado_por_nome = serializers.SerializerMethodField()
 
     class Meta:
         model = Chamado
@@ -34,6 +35,7 @@ class ChamadoSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "criado_por",
             "assumido_por",
+            "editado_por",
         ]
 
     def get_criado_por_nome(self, obj):
@@ -47,6 +49,12 @@ class ChamadoSerializer(serializers.ModelSerializer):
             return ""
 
         return obj.assumido_por.get_full_name() or obj.assumido_por.username
+
+    def get_editado_por_nome(self, obj):
+        if not obj.editado_por:
+            return ""
+
+        return obj.editado_por.get_full_name() or obj.editado_por.username
 
     def validate(self, attrs):
         status = attrs.get(

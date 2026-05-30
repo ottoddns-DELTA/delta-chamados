@@ -385,6 +385,7 @@ class ChamadoViewSet(viewsets.ModelViewSet):
             )
 
         campos_extras = {}
+        campos_extras['editado_por'] = self.request.user
 
         if novo_status == 'andamento' and status_anterior != 'andamento':
             campos_extras['assumido_por'] = self.request.user
