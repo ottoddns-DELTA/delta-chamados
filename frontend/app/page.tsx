@@ -227,7 +227,7 @@ function SidebarItem({
       onClick={onClick}
       className={`flex items-center gap-3 rounded-md border px-3 py-2.5 text-left text-sm font-semibold transition ${
         ativo
-          ? "border-slate-700/80 bg-[#1F2937] text-white shadow-sm"
+          ? "border-blue-400/60 bg-blue-500/10 text-white shadow-[0_0_0_1px_rgba(59,130,246,0.16),0_12px_28px_rgba(15,23,42,0.28)]"
           : "border-transparent text-slate-300 hover:border-slate-700/60 hover:bg-slate-800/70 hover:text-white"
       }`}
     >
@@ -2003,7 +2003,7 @@ export default function Home() {
                         placeholder="Título"
                         value={titulo}
                         onChange={(event) => setTitulo(event.target.value)}
-                        className="rounded-md border border-slate-700 bg-[#0F172A] px-3 py-2.5 text-white outline-none transition focus:border-emerald-500"
+                        className="rounded-lg border border-slate-700 bg-[#0F172A] px-3 py-2.5 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
                       />
                       </label>
 
@@ -2017,7 +2017,7 @@ export default function Home() {
                         value={descricao}
                         onChange={(event) => setDescricao(event.target.value)}
                         spellCheck
-                        className="min-h-24 w-full rounded-md border border-slate-700 bg-[#0F172A] p-3 pr-16 text-white outline-none transition focus:border-emerald-500"
+                        className="min-h-24 w-full rounded-lg border border-slate-700 bg-[#0F172A] p-3 pr-16 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
                       />
 
                         <button
@@ -2043,7 +2043,7 @@ export default function Home() {
                       <select
                         value={condominio}
                         onChange={(event) => setCondominio(event.target.value)}
-                        className="rounded-md border border-slate-700 bg-[#0F172A] px-3 py-2.5 text-white outline-none transition focus:border-emerald-500"
+                        className="rounded-lg border border-slate-700 bg-[#0F172A] px-3 py-2.5 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
                       >
                         <option value="">Selecione o condomínio</option>
 
@@ -2055,14 +2055,14 @@ export default function Home() {
                       </select>
                       </label>
 
-                      <label className="flex items-center gap-3 rounded-md border border-slate-700 bg-[#0F172A] px-3 py-2.5 text-white">
+                      <label className="flex items-center gap-3 rounded-lg border border-slate-700 bg-[#0F172A] px-4 py-3 text-white transition hover:border-slate-600">
                         <input
                           type="checkbox"
                           checked={urgente}
                           onChange={(event) =>
                             setUrgente(event.target.checked)
                           }
-                          className="h-5 w-5 accent-emerald-500"
+                          className="h-5 w-5 rounded accent-emerald-500"
                         />
 
                         <span>Este chamado é urgente</span>
@@ -2125,7 +2125,7 @@ export default function Home() {
 
                       <button
                         onClick={criarChamado}
-                        className="rounded-md bg-emerald-600 p-4 font-semibold text-white transition hover:bg-emerald-500"
+                        className="rounded-lg bg-emerald-600 p-4 font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-emerald-500 active:scale-[0.98]"
                       >
                         Criar Chamado
                       </button>
