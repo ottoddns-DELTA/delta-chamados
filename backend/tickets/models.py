@@ -23,6 +23,29 @@ class Condominio(models.Model):
         return self.nome
 
 
+class ParametrosSistema(models.Model):
+
+    sla_ativo = models.BooleanField(default=True)
+
+    sla_urgente_atencao_min = models.PositiveIntegerField(default=10)
+
+    sla_urgente_critico_min = models.PositiveIntegerField(default=30)
+
+    sla_normal_atencao_min = models.PositiveIntegerField(default=60)
+
+    sla_normal_critico_min = models.PositiveIntegerField(default=120)
+
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    @classmethod
+    def atual(cls):
+        parametros, _ = cls.objects.get_or_create(pk=1)
+        return parametros
+
+    def __str__(self):
+        return 'Parametros do sistema'
+
+
 class Chamado(models.Model):
 
     STATUS = [

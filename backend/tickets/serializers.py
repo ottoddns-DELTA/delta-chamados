@@ -8,6 +8,7 @@ from .models import (
     Chamado,
     Condominio,
     NotificationLog,
+    ParametrosSistema,
     PushDevice,
 )
 
@@ -17,6 +18,14 @@ class CondominioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Condominio
         fields = "__all__"
+
+
+class ParametrosSistemaSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ParametrosSistema
+        fields = "__all__"
+        read_only_fields = ['id', 'atualizado_em']
 
 
 class ChamadoSerializer(serializers.ModelSerializer):

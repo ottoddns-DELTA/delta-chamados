@@ -21,6 +21,7 @@ from .models import (
     Chamado,
     Condominio,
     NotificationLog,
+    ParametrosSistema,
     PushDevice,
 )
 from .permissions import (
@@ -35,6 +36,7 @@ from .serializers import (
     ChamadoSerializer,
     CondominioSerializer,
     NotificationLogSerializer,
+    ParametrosSistemaSerializer,
     PushDeviceSerializer,
     UserSerializer,
 )
@@ -601,6 +603,35 @@ class ActionLogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ActionLog.objects.all().order_by('-criado_em')
     serializer_class = ActionLogSerializer
     permission_classes = [AdminOnlyPermission]
+
+
+class ParametrosSistemaViewSet(viewsets.ModelViewSet):
+
+    serializer_class = ParametrosSistemaSerializer
+    http_method_names = ['get', 'patch', 'head', 'options']
+
+    def get_permissions(self):
+        if self.action in ['partial_update']:
+            return [AdminOnlyPermission()]
+
+        return [IsAuthenticated()]
+
+    def get_queryset(self):
+        return ParametrosSistema.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        return Response(self.get_serializer(ParametrosSistema.atual()).data)
+
+    def get_object(self):
+        return ParametrosSistema.atual()
+
+    def perform_update(self, serializer):
+        serializer.save()
+        registrar_acao(
+            self.request,
+            'alterou_parametros',
+            'Parametros de SLA atualizados.',
+        )
 
 
 class PushDeviceViewSet(viewsets.ModelViewSet):

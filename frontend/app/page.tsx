@@ -17,6 +17,23 @@ const API_URL =
 
 const DIAS_NO_HISTORICO = 30;
 
+type ParametrosSistema = {
+  id?: number;
+  sla_ativo: boolean;
+  sla_urgente_atencao_min: number;
+  sla_urgente_critico_min: number;
+  sla_normal_atencao_min: number;
+  sla_normal_critico_min: number;
+};
+
+const PARAMETROS_PADRAO: ParametrosSistema = {
+  sla_ativo: true,
+  sla_urgente_atencao_min: 10,
+  sla_urgente_critico_min: 30,
+  sla_normal_atencao_min: 60,
+  sla_normal_critico_min: 120,
+};
+
 type Aba =
   | "dashboard"
   | "chamados"
@@ -31,6 +48,7 @@ type AbaAdmin =
   | "accessLogs"
   | "actionLogs"
   | "notificationLogs"
+  | "parametros"
   | "backup";
 type PeriodoHistorico = "hoje" | "7" | "30" | "todos";
 
@@ -549,14 +567,21 @@ function minutosDesde(data?: string | null) {
   );
 }
 
-function nivelSla(chamado: Chamado) {
-  if (chamado.status === "resolvido") {
+function nivelSla(
+  chamado: Chamado,
+  parametros: ParametrosSistema = PARAMETROS_PADRAO
+) {
+  if (chamado.status === "resolvido" || !parametros.sla_ativo) {
     return "ok";
   }
 
   const minutos = minutosDesde(chamado.criado_em);
-  const limiteAtencao = chamado.urgente ? 10 : 60;
-  const limiteCritico = chamado.urgente ? 30 : 120;
+  const limiteAtencao = chamado.urgente
+    ? parametros.sla_urgente_atencao_min
+    : parametros.sla_normal_atencao_min;
+  const limiteCritico = chamado.urgente
+    ? parametros.sla_urgente_critico_min
+    : parametros.sla_normal_critico_min;
 
   if (minutos >= limiteCritico) {
     return "critico";
@@ -582,8 +607,11 @@ function textoSla(chamado: Chamado) {
   return resto ? `${horas}h ${resto}min` : `${horas}h`;
 }
 
-function classeSlaCard(chamado: Chamado) {
-  const nivel = nivelSla(chamado);
+function classeSlaCard(
+  chamado: Chamado,
+  parametros: ParametrosSistema = PARAMETROS_PADRAO
+) {
+  const nivel = nivelSla(chamado, parametros);
 
   if (nivel === "critico") {
     return "border-l-red-400/90 shadow-[0_0_0_1px_rgba(248,113,113,0.14)]";
@@ -740,6 +768,10 @@ export default function Home() {
   const [historicoCondominio, setHistoricoCondominio] = useState("");
   const [historicoPeriodo, setHistoricoPeriodo] =
     useState<PeriodoHistorico>("30");
+  const [parametrosSistema, setParametrosSistema] =
+    useState<ParametrosSistema>(PARAMETROS_PADRAO);
+  const [parametrosEditaveis, setParametrosEditaveis] =
+    useState<ParametrosSistema>(PARAMETROS_PADRAO);
   const [chamados, setChamados] = useState<Chamado[]>([]);
   const [condominios, setCondominios] = useState<Condominio[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioSistema[]>([]);
@@ -863,9 +895,10 @@ export default function Home() {
     () =>
       chamados.filter(
         (chamado) =>
-          chamado.status !== "resolvido" && nivelSla(chamado) !== "ok"
+          chamado.status !== "resolvido" &&
+          nivelSla(chamado, parametrosSistema) !== "ok"
       ),
-    [chamados]
+    [chamados, parametrosSistema]
   );
 
   const chamadosPrioritariosDashboard = useMemo(
@@ -873,9 +906,9 @@ export default function Home() {
       [...chamadosAbertos, ...chamadosEmAtendimento]
         .sort((a, b) => {
           const peso = (chamado: Chamado) =>
-            (nivelSla(chamado) === "critico"
+            (nivelSla(chamado, parametrosSistema) === "critico"
               ? 3
-              : nivelSla(chamado) === "atencao"
+              : nivelSla(chamado, parametrosSistema) === "atencao"
                 ? 2
                 : 1) + (chamado.urgente ? 1 : 0);
 
@@ -885,7 +918,7 @@ export default function Home() {
           );
         })
         .slice(0, 5),
-    [chamadosAbertos, chamadosEmAtendimento]
+    [chamadosAbertos, chamadosEmAtendimento, parametrosSistema]
   );
 
   const chamadosResolvidosFiltrados = useMemo(
@@ -1255,6 +1288,48 @@ export default function Home() {
     });
     const data = await response.json();
     setCondominios(ordenarCondominios(data));
+  }
+
+  async function carregarParametros() {
+    const response = await fetch(`${API_URL}/api/parametros/`, {
+      cache: "no-store",
+      headers: authHeaders,
+    });
+
+    if (!response.ok) {
+      return;
+    }
+
+    const data = await response.json();
+    const parametros = { ...PARAMETROS_PADRAO, ...data };
+    setParametrosSistema(parametros);
+    setParametrosEditaveis(parametros);
+  }
+
+  async function salvarParametros() {
+    if (usuarioLogado?.perfil !== "admin") {
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/api/parametros/1/`, {
+      method: "PATCH",
+      headers: {
+        ...authHeaders,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(parametrosEditaveis),
+    });
+
+    if (!response.ok) {
+      alert("Erro ao salvar parametros.");
+      return;
+    }
+
+    const data = await response.json();
+    const parametros = { ...PARAMETROS_PADRAO, ...data };
+    setParametrosSistema(parametros);
+    setParametrosEditaveis(parametros);
+    alert("Parametros salvos.");
   }
 
   async function carregarAdmin() {
@@ -2123,7 +2198,11 @@ export default function Home() {
     let ativo = true;
 
     async function carregarDados() {
-      const [listaChamados, listaCondominios] = await Promise.all([
+      const [
+        listaChamados,
+        listaCondominios,
+        parametros,
+      ] = await Promise.all([
         fetch(`${API_URL}/api/chamados/`, {
           cache: "no-store",
           headers: authHeaders,
@@ -2132,11 +2211,19 @@ export default function Home() {
           cache: "no-store",
           headers: authHeaders,
         }).then((response) => response.json()),
+        fetch(`${API_URL}/api/parametros/`, {
+          cache: "no-store",
+          headers: authHeaders,
+        }).then((response) =>
+          response.ok ? response.json() : PARAMETROS_PADRAO
+        ),
       ]);
 
       if (ativo) {
         atualizarChamados(listaChamados);
         setCondominios(ordenarCondominios(listaCondominios));
+        setParametrosSistema({ ...PARAMETROS_PADRAO, ...parametros });
+        setParametrosEditaveis({ ...PARAMETROS_PADRAO, ...parametros });
       }
     }
 
@@ -2862,7 +2949,7 @@ export default function Home() {
 
                   <div className="grid gap-3">
                     {chamadosPrioritariosDashboard.map((chamado) => {
-                      const nivel = nivelSla(chamado);
+                      const nivel = nivelSla(chamado, parametrosSistema);
 
                       return (
                         <button
@@ -2876,7 +2963,8 @@ export default function Home() {
                             )
                           }
                           className={`rounded-lg border border-l-4 bg-[#0F172A] p-4 text-left transition hover:border-slate-500 ${classeSlaCard(
-                            chamado
+                            chamado,
+                            parametrosSistema
                           )}`}
                         >
                           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -3060,7 +3148,7 @@ export default function Home() {
                     Administração
                   </h2>
 
-                  <div className="grid gap-3 sm:grid-cols-5">
+                  <div className="grid gap-3 sm:grid-cols-6">
                     <button
                       onClick={() => {
                         setAbaAdmin("usuarios");
@@ -3115,6 +3203,20 @@ export default function Home() {
                       }`}
                     >
                       Logs de notificacao
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setAbaAdmin("parametros");
+                        carregarParametros();
+                      }}
+                      className={`rounded-md p-3 text-left font-semibold transition ${
+                        abaAdmin === "parametros"
+                          ? "bg-white text-black"
+                          : "bg-[#1F2937] text-slate-200 hover:bg-slate-700"
+                      }`}
+                    >
+                      Parâmetros
                     </button>
 
                     <button
@@ -3393,6 +3495,92 @@ export default function Home() {
                           Baixa os arquivos principais de uma vez.
                         </span>
                       </button>
+                    </div>
+                  </div>
+                )}
+
+                {abaAdmin === "parametros" && (
+                  <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-xl">
+                    <div className="mb-6">
+                      <h2 className="text-2xl font-semibold">Parâmetros</h2>
+                      <p className="mt-2 text-sm text-slate-400">
+                        Configure o SLA visual do painel e dos cards.
+                      </p>
+                    </div>
+
+                    <div className="grid gap-4">
+                      <label className="flex items-center gap-3 rounded-lg border border-slate-700 bg-[#0F172A] p-4 text-white">
+                        <input
+                          type="checkbox"
+                          checked={parametrosEditaveis.sla_ativo}
+                          onChange={(event) =>
+                            setParametrosEditaveis((atual) => ({
+                              ...atual,
+                              sla_ativo: event.target.checked,
+                            }))
+                          }
+                          className="h-5 w-5 accent-emerald-500"
+                        />
+                        <span>SLA visual ativo</span>
+                      </label>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {[
+                          ["Urgente: atenção após", "sla_urgente_atencao_min"],
+                          ["Urgente: crítico após", "sla_urgente_critico_min"],
+                          ["Normal: atenção após", "sla_normal_atencao_min"],
+                          ["Normal: crítico após", "sla_normal_critico_min"],
+                        ].map(([label, campo]) => (
+                          <label
+                            key={campo}
+                            className="grid gap-2 text-sm font-medium text-slate-300"
+                          >
+                            {label}
+                            <div className="flex items-center rounded-lg border border-slate-700 bg-[#0F172A] focus-within:border-emerald-500">
+                              <input
+                                type="number"
+                                min="1"
+                                value={
+                                  parametrosEditaveis[
+                                    campo as keyof ParametrosSistema
+                                  ] as number
+                                }
+                                onChange={(event) =>
+                                  setParametrosEditaveis((atual) => ({
+                                    ...atual,
+                                    [campo]: Math.max(
+                                      1,
+                                      Number(event.target.value || 1)
+                                    ),
+                                  }))
+                                }
+                                className="w-full rounded-lg bg-transparent p-4 text-white outline-none"
+                              />
+                              <span className="pr-4 text-sm text-slate-400">
+                                min
+                              </span>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={salvarParametros}
+                          className="rounded-md bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-500"
+                        >
+                          Salvar parâmetros
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setParametrosEditaveis(parametrosSistema)}
+                          className="rounded-md border border-slate-600 px-5 py-3 font-medium text-slate-300 transition hover:border-slate-400 hover:text-white"
+                        >
+                          Descartar alterações
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -3829,7 +4017,10 @@ export default function Home() {
                           aba === "historico" &&
                           chamadosSelecionadosPdf.includes(chamado.id)
                             ? "border-emerald-400/70 shadow-[0_0_0_1px_rgba(16,185,129,0.18),0_20px_40px_rgba(15,23,42,0.35)]"
-                            : `border-slate-700/70 ${classeSlaCard(chamado)}`
+                            : `border-slate-700/70 ${classeSlaCard(
+                                chamado,
+                                parametrosSistema
+                              )}`
                         } ${aba === "historico" ? "pb-4" : ""} ${
                           usuarioLogado?.perfil === "tecnico"
                             ? "cursor-pointer"
@@ -4021,15 +4212,15 @@ export default function Home() {
                             )}
 
                             {chamado.status !== "resolvido" &&
-                              nivelSla(chamado) !== "ok" && (
+                              nivelSla(chamado, parametrosSistema) !== "ok" && (
                                 <span
                                   className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                                    nivelSla(chamado) === "critico"
+                                    nivelSla(chamado, parametrosSistema) === "critico"
                                       ? "border-red-400/30 bg-red-500/15 text-red-300"
                                       : "border-yellow-400/30 bg-yellow-500/15 text-yellow-200"
                                   }`}
                                 >
-                                  {nivelSla(chamado) === "critico"
+                                  {nivelSla(chamado, parametrosSistema) === "critico"
                                     ? "SLA crítico"
                                     : "SLA atenção"}
                                 </span>

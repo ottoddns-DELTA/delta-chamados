@@ -10,6 +10,7 @@ from .views import (
     MelhorarTextoView,
     MinhaSenhaView,
     NotificationLogViewSet,
+    ParametrosSistemaViewSet,
     PushDeviceViewSet,
     UserViewSet,
 )
@@ -23,6 +24,7 @@ router.register(r'access-logs', AccessLogViewSet)
 router.register(r'action-logs', ActionLogViewSet)
 router.register(r'push-devices', PushDeviceViewSet, basename='push-devices')
 router.register(r'notification-logs', NotificationLogViewSet, basename='notification-logs')
+router.register(r'parametros', ParametrosSistemaViewSet, basename='parametros')
 
 urlpatterns = [
     path('login/', LoginView.as_view()),
