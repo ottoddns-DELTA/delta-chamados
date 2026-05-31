@@ -59,7 +59,7 @@ def snapshot_chamado(chamado):
         'Status': chamado.status,
         'Foto': 'sim' if chamado.imagem else 'nao',
         'Foto resolucao': 'sim' if chamado.imagem_resolucao else 'nao',
-        'Feito': chamado.descricao_resolucao or '',
+        'Solucao': chamado.descricao_resolucao or '',
     }
 
 

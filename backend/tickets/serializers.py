@@ -69,7 +69,7 @@ class ChamadoSerializer(serializers.ModelSerializer):
         if status == 'resolvido' and not descricao_resolucao.strip():
             raise serializers.ValidationError({
                 'descricao_resolucao': (
-                    'Informe uma breve descricao do que foi feito.'
+                    'Informe uma breve descricao da solucao aplicada.'
                 )
             })
 

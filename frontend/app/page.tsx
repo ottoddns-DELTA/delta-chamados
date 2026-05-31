@@ -57,11 +57,13 @@ function CondominioCombobox({
   valor,
   onChange,
   placeholder = "Selecione o condomínio",
+  onEscape,
 }: {
   condominios: Condominio[];
   valor: string;
   onChange: (valor: string) => void;
   placeholder?: string;
+  onEscape?: () => void;
 }) {
   const selecionado = condominios.find((item) => String(item.id) === valor);
   const listaId = useId();
@@ -132,8 +134,10 @@ function CondominioCombobox({
             }
 
             if (event.key === "Escape") {
+              event.preventDefault();
               setAberto(false);
               setBusca("");
+              onEscape?.();
             }
           }}
           onBlur={() => {
@@ -1404,7 +1408,7 @@ export default function Home() {
 
   async function resolverChamado() {
     if (!resolvendoChamadoId || !descricaoResolucao.trim()) {
-      alert("Informe o que foi feito antes de resolver.");
+      alert("Informe a solução antes de resolver.");
       return;
     }
 
@@ -1491,7 +1495,7 @@ export default function Home() {
               <div><dt>Editado por</dt><dd>${escaparHtml(chamado.editado_em ? chamado.editado_por_nome || "nao informado" : "Nao editado")}</dd></div>
               <div><dt>Ultima edicao</dt><dd>${escaparHtml(chamado.editado_em ? formatarData(chamado.editado_em) : "Nao editado")}</dd></div>
               <div><dt>Resolvido em</dt><dd>${escaparHtml(formatarData(chamado.resolvido_em))}</dd></div>
-              <div><dt>Feito</dt><dd>${escaparHtml(chamado.descricao_resolucao || "Nao informado")}</dd></div>
+              <div><dt>Solução</dt><dd>${escaparHtml(chamado.descricao_resolucao || "Nao informado")}</dd></div>
               <div><dt>Foto da resolucao</dt><dd>${escaparHtml(chamado.imagem_resolucao ? "sim" : "nao")}</dd></div>
             </dl>
           </article>
@@ -1621,7 +1625,7 @@ export default function Home() {
       `Chamado: ${chamado.titulo}`,
       `Descricao: ${chamado.descricao}`,
       chamado.descricao_resolucao
-        ? `Feito: ${chamado.descricao_resolucao}`
+        ? `Solução: ${chamado.descricao_resolucao}`
         : "",
       chamado.imagem_resolucao
         ? `Foto da resolucao: ${chamado.imagem_resolucao}`
@@ -2118,7 +2122,7 @@ export default function Home() {
         "criado_em",
         "editado_em",
         "resolvido_em",
-        "feito",
+        "solucao",
         "imagem",
         "imagem_resolucao",
       ],
@@ -2230,7 +2234,7 @@ export default function Home() {
           <div className="w-full max-w-lg rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-2xl">
             <h2 className="mb-3 text-2xl font-semibold">Resolver chamado</h2>
             <p className="mb-4 text-sm text-slate-400">
-              Descreva brevemente o que foi feito no atendimento.
+              Descreva brevemente a solução aplicada no atendimento.
             </p>
 
             <textarea
@@ -3302,6 +3306,7 @@ export default function Home() {
                               valor={historicoCondominio}
                               onChange={setHistoricoCondominio}
                               placeholder="Todos os condomínios"
+                              onEscape={() => setHistoricoCondominio("")}
                             />
                           </label>
 
@@ -3612,10 +3617,10 @@ export default function Home() {
                                 copiarDescricaoResolucao(chamado);
                               }}
                               className="mb-3 block w-full rounded-lg border border-emerald-300/25 bg-emerald-400/12 px-3 py-2.5 text-left text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-emerald-300/60 hover:bg-emerald-400/15"
-                              title="Clique para copiar o texto feito pelo tecnico"
+                              title="Clique para copiar a solução"
                             >
                               <span className="mb-1 flex items-center justify-between gap-3 text-[11px] font-bold uppercase tracking-wide text-emerald-300">
-                                <span>Feito</span>
+                                <span>Solução</span>
                                 <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal text-emerald-200">
                                   {descricaoCopiadaId === chamado.id
                                     ? "Copiado"

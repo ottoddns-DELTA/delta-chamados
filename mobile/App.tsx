@@ -576,7 +576,7 @@ export default function App() {
 
   async function resolverChamado() {
     if (!chamadoParaResolver || !descricaoResolucao.trim()) {
-      Alert.alert("Descricao obrigatoria", "Informe o que foi feito.");
+      Alert.alert("Descricao obrigatoria", "Informe a solução aplicada.");
       return;
     }
 
@@ -782,7 +782,7 @@ export default function App() {
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>Resolver chamado</Text>
             <Text style={styles.modalSubtitle}>
-              Descreva brevemente o que foi feito.
+              Descreva brevemente a solução aplicada.
             </Text>
 
             <TextInput
