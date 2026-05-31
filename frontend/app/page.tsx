@@ -4,6 +4,7 @@ import Image from "next/image";
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useState,
   type MouseEvent,
@@ -34,6 +35,183 @@ type Condominio = {
 function ordenarCondominios(lista: Condominio[]) {
   return [...lista].sort((a, b) =>
     a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" })
+  );
+}
+
+function normalizarBusca(valor: string) {
+  return valor
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function CondominioCombobox({
+  condominios,
+  valor,
+  onChange,
+  placeholder = "Selecione o condomínio",
+}: {
+  condominios: Condominio[];
+  valor: string;
+  onChange: (valor: string) => void;
+  placeholder?: string;
+}) {
+  const selecionado = condominios.find((item) => String(item.id) === valor);
+  const listaId = useId();
+  const nomeSelecionado = selecionado?.nome ?? "";
+  const [busca, setBusca] = useState("");
+  const [aberto, setAberto] = useState(false);
+  const [indiceAtivo, setIndiceAtivo] = useState(0);
+  const textoCampo = aberto ? busca : nomeSelecionado || busca;
+
+  const termo = normalizarBusca(busca);
+  const opcoes = termo
+    ? condominios.filter((item) => normalizarBusca(item.nome).includes(termo))
+    : condominios;
+
+  function escolher(item: Condominio) {
+    onChange(String(item.id));
+    setBusca("");
+    setAberto(false);
+  }
+
+  function confirmarOpcao() {
+    const opcao = opcoes[Math.min(indiceAtivo, opcoes.length - 1)];
+    if (opcao) {
+      escolher(opcao);
+    }
+  }
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <input
+          type="text"
+          value={textoCampo}
+          placeholder={placeholder}
+          role="combobox"
+          aria-controls={listaId}
+          aria-expanded={aberto}
+          autoComplete="off"
+          onFocus={() => {
+            setBusca("");
+            setIndiceAtivo(0);
+            setAberto(true);
+          }}
+          onChange={(event) => {
+            const novoValor = event.target.value;
+            setBusca(novoValor);
+            setIndiceAtivo(0);
+            setAberto(true);
+            onChange("");
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              setAberto(true);
+              setIndiceAtivo((atual) =>
+                Math.min(atual + 1, Math.max(opcoes.length - 1, 0))
+              );
+            }
+
+            if (event.key === "ArrowUp") {
+              event.preventDefault();
+              setIndiceAtivo((atual) => Math.max(atual - 1, 0));
+            }
+
+            if (event.key === "Enter" && aberto) {
+              event.preventDefault();
+              confirmarOpcao();
+            }
+
+            if (event.key === "Escape") {
+              setAberto(false);
+              setBusca("");
+            }
+          }}
+          onBlur={() => {
+            window.setTimeout(() => {
+              const exato = condominios.find(
+                (item) => normalizarBusca(item.nome) === normalizarBusca(busca)
+              );
+              const unicoResultado = termo && opcoes.length === 1 ? opcoes[0] : null;
+
+              if (exato) {
+                escolher(exato);
+                return;
+              }
+
+              if (unicoResultado) {
+                escolher(unicoResultado);
+                return;
+              }
+
+              if (!valor) {
+                setBusca("");
+              }
+
+              setAberto(false);
+            }, 120);
+          }}
+          className="w-full rounded-lg border border-slate-700 bg-[#0F172A] px-3 py-2.5 pr-10 text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+        />
+
+        <button
+          type="button"
+          title="Abrir lista de condomínios"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => setAberto((atual) => !atual)}
+          className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-slate-300 transition hover:text-white"
+        >
+          <svg
+            className={`h-4 w-4 transition ${aberto ? "rotate-180" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="m6 9 6 6 6-6"
+            />
+          </svg>
+        </button>
+      </div>
+
+      {aberto && (
+        <div
+          id={listaId}
+          className="absolute z-40 mt-2 max-h-64 w-full overflow-auto rounded-lg border border-slate-700 bg-[#0B1220] p-1 shadow-2xl shadow-black/40"
+        >
+          {opcoes.length > 0 ? (
+            opcoes.map((item, index) => (
+              <button
+                key={item.id}
+                type="button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  escolher(item);
+                }}
+                onMouseEnter={() => setIndiceAtivo(index)}
+                className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm font-medium transition ${
+                  index === indiceAtivo
+                    ? "bg-blue-600 text-white"
+                    : "text-slate-100 hover:bg-slate-800"
+                }`}
+              >
+                <span>{item.nome}</span>
+              </button>
+            ))
+          ) : (
+            <div className="px-3 py-3 text-sm text-slate-400">
+              Nenhum condomínio encontrado
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -2749,19 +2927,11 @@ export default function Home() {
                         <span>
                           Selecione o Condominio <CampoObrigatorio />
                         </span>
-                      <select
-                        value={condominio}
-                        onChange={(event) => setCondominio(event.target.value)}
-                        className="rounded-lg border border-slate-700 bg-[#0F172A] px-3 py-2.5 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
-                      >
-                        <option value="">Selecione o condomínio</option>
-
-                        {condominios.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.nome}
-                          </option>
-                        ))}
-                      </select>
+                        <CondominioCombobox
+                          condominios={condominios}
+                          valor={condominio}
+                          onChange={setCondominio}
+                        />
                       </label>
 
                       <label className="flex items-center gap-3 rounded-lg border border-slate-700 bg-[#0F172A] px-4 py-3 text-white transition hover:border-slate-600">
@@ -2948,21 +3118,11 @@ export default function Home() {
                               className="min-h-28 rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
                             />
 
-                            <select
-                              value={edicaoCondominio}
-                              onChange={(event) =>
-                                setEdicaoCondominio(event.target.value)
-                              }
-                              className="rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white outline-none transition focus:border-emerald-500"
-                            >
-                              <option value="">Selecione o condomínio</option>
-
-                              {condominios.map((item) => (
-                                <option key={item.id} value={item.id}>
-                                  {item.nome}
-                                </option>
-                              ))}
-                            </select>
+                            <CondominioCombobox
+                              condominios={condominios}
+                              valor={edicaoCondominio}
+                              onChange={setEdicaoCondominio}
+                            />
 
                             <label className="flex items-center gap-3 rounded-md border border-slate-700 bg-[#0F172A] p-4 text-white">
                               <input
