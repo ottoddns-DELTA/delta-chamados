@@ -24,7 +24,13 @@ type Aba =
   | "historico"
   | "condominios"
   | "admin";
-type AbaAdmin = "usuarios" | "accessLogs" | "actionLogs" | "notificationLogs";
+type AbaAdmin =
+  | "usuarios"
+  | "accessLogs"
+  | "actionLogs"
+  | "notificationLogs"
+  | "backup";
+type PeriodoHistorico = "hoje" | "7" | "30" | "todos";
 
 type Condominio = {
   id: number;
@@ -463,6 +469,34 @@ function chamadoEstaNoHistorico(chamado: Chamado) {
   return dataResolucao >= limite;
 }
 
+function chamadoDentroPeriodoHistorico(
+  chamado: Chamado,
+  periodo: PeriodoHistorico
+) {
+  if (periodo === "todos") {
+    return true;
+  }
+
+  const dataReferencia = chamado.resolvido_em || chamado.atualizado_em;
+
+  if (!dataReferencia) {
+    return true;
+  }
+
+  const data = new Date(dataReferencia).getTime();
+
+  if (periodo === "hoje") {
+    const inicioDoDia = new Date();
+    inicioDoDia.setHours(0, 0, 0, 0);
+    return data >= inicioDoDia.getTime();
+  }
+
+  const dias = periodo === "7" ? 7 : 30;
+  const limite = Date.now() - dias * 24 * 60 * 60 * 1000;
+
+  return data >= limite;
+}
+
 function formatarData(data?: string | null) {
   if (!data) {
     return "";
@@ -493,6 +527,10 @@ function escaparHtml(texto?: string | number | null) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function valorCsv(valor?: string | number | boolean | null) {
+  return `"${String(valor ?? "").replaceAll('"', '""')}"`;
 }
 
 function textoEventoNotificacao(evento: NotificationLog["evento"]) {
@@ -614,6 +652,9 @@ export default function Home() {
 
   const [aba, setAba] = useState<Aba>("chamados");
   const [abaAdmin, setAbaAdmin] = useState<AbaAdmin>("usuarios");
+  const [historicoCondominio, setHistoricoCondominio] = useState("");
+  const [historicoPeriodo, setHistoricoPeriodo] =
+    useState<PeriodoHistorico>("30");
   const [chamados, setChamados] = useState<Chamado[]>([]);
   const [condominios, setCondominios] = useState<Condominio[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioSistema[]>([]);
@@ -709,11 +750,58 @@ export default function Home() {
     () => chamados.filter(chamadoEstaNoHistorico),
     [chamados]
   );
+
+  const chamadosResolvidosFiltrados = useMemo(
+    () =>
+      chamados.filter((chamado) => {
+        if (chamado.status !== "resolvido") {
+          return false;
+        }
+
+        if (
+          historicoCondominio &&
+          String(chamado.condominio) !== historicoCondominio
+        ) {
+          return false;
+        }
+
+        return chamadoDentroPeriodoHistorico(chamado, historicoPeriodo);
+      }),
+    [chamados, historicoCondominio, historicoPeriodo]
+  );
+
+  const idsResolvidosFiltrados = useMemo(
+    () => new Set(chamadosResolvidosFiltrados.map((chamado) => chamado.id)),
+    [chamadosResolvidosFiltrados]
+  );
+
+  const quantidadeSelecionadaHistorico = chamadosSelecionadosPdf.filter((id) =>
+    idsResolvidosFiltrados.has(id)
+  ).length;
+
   const todosResolvidosSelecionados =
-    chamadosResolvidos.length > 0 &&
-    chamadosResolvidos.every((chamado) =>
+    chamadosResolvidosFiltrados.length > 0 &&
+    chamadosResolvidosFiltrados.every((chamado) =>
       chamadosSelecionadosPdf.includes(chamado.id)
     );
+
+  const chamadosDaAba = useMemo(() => {
+    if (aba === "historico") {
+      return chamadosResolvidosFiltrados;
+    }
+
+    if (aba === "andamento") {
+      return chamados.filter((chamado) => chamado.status === "andamento");
+    }
+
+    if (aba === "urgentes") {
+      return chamados.filter(
+        (chamado) => chamado.urgente && chamado.status !== "resolvido"
+      );
+    }
+
+    return chamados.filter((chamado) => chamado.status === "aberto");
+  }, [aba, chamados, chamadosResolvidosFiltrados]);
   const linhasNotificacao = useMemo(() => {
     const usados = new Set<number>();
     const linhas: Array<{
@@ -1350,16 +1438,24 @@ export default function Home() {
   }
 
   function alternarTodosResolvidosPdf() {
+    const idsVisiveis = chamadosResolvidosFiltrados.map(
+      (chamado) => chamado.id
+    );
+
     if (todosResolvidosSelecionados) {
-      setChamadosSelecionadosPdf([]);
+      setChamadosSelecionadosPdf((selecionados) =>
+        selecionados.filter((id) => !idsResolvidosFiltrados.has(id))
+      );
       return;
     }
 
-    setChamadosSelecionadosPdf(chamadosResolvidos.map((chamado) => chamado.id));
+    setChamadosSelecionadosPdf((selecionados) =>
+      Array.from(new Set([...selecionados, ...idsVisiveis]))
+    );
   }
 
   function exportarResolvidosPdf() {
-    const chamadosParaExportar = chamadosResolvidos.filter((chamado) =>
+    const chamadosParaExportar = chamadosResolvidosFiltrados.filter((chamado) =>
       chamadosSelecionadosPdf.includes(chamado.id)
     );
 
@@ -1982,6 +2078,92 @@ export default function Home() {
     );
   }
 
+  function baixarCsv(nomeArquivo: string, linhas: Array<Array<string | number | boolean | null | undefined>>) {
+    const conteudo = linhas
+      .map((linha) => linha.map(valorCsv).join(";"))
+      .join("\n");
+    const blob = new Blob([`\ufeff${conteudo}`], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = nomeArquivo;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportarBackupCondominios() {
+    baixarCsv("delta-condominios.csv", [
+      ["id", "nome", "endereco"],
+      ...condominios.map((item) => [item.id, item.nome, item.endereco]),
+    ]);
+  }
+
+  function exportarBackupChamados() {
+    baixarCsv("delta-chamados.csv", [
+      [
+        "id",
+        "condominio",
+        "titulo",
+        "descricao",
+        "status",
+        "urgente",
+        "aberto_por",
+        "assumido_por",
+        "editado_por",
+        "criado_em",
+        "editado_em",
+        "resolvido_em",
+        "feito",
+        "imagem",
+        "imagem_resolucao",
+      ],
+      ...chamados.map((chamado) => [
+        chamado.id,
+        chamado.condominio_nome || chamado.condominio,
+        chamado.titulo,
+        chamado.descricao,
+        chamado.status,
+        chamado.urgente ? "sim" : "nao",
+        chamado.criado_por_nome || "",
+        chamado.assumido_por_nome || "",
+        chamado.editado_por_nome || "",
+        chamado.criado_em ? formatarData(chamado.criado_em) : "",
+        chamado.editado_em ? formatarData(chamado.editado_em) : "",
+        chamado.resolvido_em ? formatarData(chamado.resolvido_em) : "",
+        chamado.descricao_resolucao || "",
+        chamado.imagem || "",
+        chamado.imagem_resolucao || "",
+      ]),
+    ]);
+  }
+
+  function exportarBackupUsuarios() {
+    baixarCsv("delta-usuarios.csv", [
+      ["id", "usuario", "nome", "perfil", "ativo"],
+      ...usuarios.map((item) => [
+        item.id,
+        item.username,
+        item.first_name || item.username,
+        item.perfil,
+        item.is_active ? "sim" : "nao",
+      ]),
+    ]);
+  }
+
+  function exportarBackupTudo() {
+    exportarBackupCondominios();
+    exportarBackupChamados();
+
+    if (usuarios.length > 0) {
+      exportarBackupUsuarios();
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#0F172A] text-white">
       {mensagemPopup && (
@@ -2431,7 +2613,7 @@ export default function Home() {
                     Administração
                   </h2>
 
-                  <div className="grid gap-3 sm:grid-cols-4">
+                  <div className="grid gap-3 sm:grid-cols-5">
                     <button
                       onClick={() => {
                         setAbaAdmin("usuarios");
@@ -2486,6 +2668,20 @@ export default function Home() {
                       }`}
                     >
                       Logs de notificacao
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setAbaAdmin("backup");
+                        carregarAdmin();
+                      }}
+                      className={`rounded-md p-3 text-left font-semibold transition ${
+                        abaAdmin === "backup"
+                          ? "bg-white text-black"
+                          : "bg-[#1F2937] text-slate-200 hover:bg-slate-700"
+                      }`}
+                    >
+                      Backup
                     </button>
                   </div>
                 </div>
@@ -2686,6 +2882,72 @@ export default function Home() {
                       </div>
                     </div>
                   </>
+                )}
+
+                {abaAdmin === "backup" && (
+                  <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-6 shadow-xl">
+                    <div className="mb-6">
+                      <h2 className="text-2xl font-semibold">Backup</h2>
+                      <p className="mt-2 text-sm text-slate-400">
+                        Exportacao administrativa em CSV. Senhas nunca entram
+                        no backup.
+                      </p>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                      <button
+                        type="button"
+                        onClick={exportarBackupCondominios}
+                        className="rounded-lg border border-slate-700 bg-[#0F172A] p-5 text-left transition hover:border-emerald-400/70 hover:bg-slate-900"
+                      >
+                        <span className="block text-lg font-semibold text-white">
+                          Condominios
+                        </span>
+                        <span className="mt-2 block text-sm text-slate-400">
+                          Nome e endereco cadastrados.
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={exportarBackupChamados}
+                        className="rounded-lg border border-slate-700 bg-[#0F172A] p-5 text-left transition hover:border-emerald-400/70 hover:bg-slate-900"
+                      >
+                        <span className="block text-lg font-semibold text-white">
+                          Chamados
+                        </span>
+                        <span className="mt-2 block text-sm text-slate-400">
+                          Historico, status, usuarios, datas e links das fotos.
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={exportarBackupUsuarios}
+                        className="rounded-lg border border-slate-700 bg-[#0F172A] p-5 text-left transition hover:border-emerald-400/70 hover:bg-slate-900"
+                      >
+                        <span className="block text-lg font-semibold text-white">
+                          Usuarios
+                        </span>
+                        <span className="mt-2 block text-sm text-slate-400">
+                          Usuario, perfil e status. Sem senhas.
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={exportarBackupTudo}
+                        className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 p-5 text-left transition hover:border-emerald-300 hover:bg-emerald-500/15"
+                      >
+                        <span className="block text-lg font-semibold text-emerald-100">
+                          Exportar tudo
+                        </span>
+                        <span className="mt-2 block text-sm text-emerald-200/80">
+                          Baixa os arquivos principais de uma vez.
+                        </span>
+                      </button>
+                    </div>
+                  </div>
                 )}
 
                 {abaAdmin === "actionLogs" && (
@@ -3020,57 +3282,97 @@ export default function Home() {
                 <div className="grid gap-5">
                   {aba === "historico" && (
                     <div className="rounded-lg border border-slate-700/70 bg-[#1F2937]/80 p-4 shadow-xl">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <button
-                          type="button"
-                          onClick={alternarTodosResolvidosPdf}
-                          className={`inline-flex items-center gap-3 rounded-md border px-4 py-3 text-sm font-semibold transition ${
-                            todosResolvidosSelecionados
-                              ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-100"
-                              : "border-slate-700 bg-[#0F172A] text-slate-300 hover:border-slate-500 hover:text-white"
-                          }`}
-                        >
-                          <span
-                            className={`h-5 w-5 rounded border ${
-                              todosResolvidosSelecionados
-                                ? "border-emerald-300 bg-emerald-500"
-                                : "border-slate-500 bg-slate-900"
-                            }`}
-                          />
-                          <span>
-                            {todosResolvidosSelecionados
-                              ? "Todos selecionados"
-                              : "Selecionar todos"}{" "}
-                            ({chamadosSelecionadosPdf.length})
-                          </span>
-                        </button>
+                      <div className="grid gap-4">
+                        <div className="grid gap-3 lg:grid-cols-[1fr_180px]">
+                          <label className="grid gap-2 text-sm font-medium text-slate-300">
+                            <span className="flex items-center justify-between gap-3">
+                              <span>Condomínio</span>
+                              {historicoCondominio && (
+                                <button
+                                  type="button"
+                                  onClick={() => setHistoricoCondominio("")}
+                                  className="text-xs font-semibold text-slate-400 transition hover:text-white"
+                                >
+                                  Limpar
+                                </button>
+                              )}
+                            </span>
+                            <CondominioCombobox
+                              condominios={condominios}
+                              valor={historicoCondominio}
+                              onChange={setHistoricoCondominio}
+                              placeholder="Todos os condomínios"
+                            />
+                          </label>
 
-                        <div className="flex flex-col gap-2 sm:items-end">
-                          <button
-                            onClick={exportarResolvidosPdf}
-                            className="rounded-md bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] transition hover:bg-emerald-500 active:scale-[0.98]"
-                          >
-                            Exportar PDF
-                          </button>
-                          <span className="text-xs text-slate-400">
-                            Selecione os cards que entram no relatorio
-                          </span>
+                          <label className="grid gap-2 text-sm font-medium text-slate-300">
+                            Período
+                            <select
+                              value={historicoPeriodo}
+                              onChange={(event) =>
+                                setHistoricoPeriodo(
+                                  event.target.value as PeriodoHistorico
+                                )
+                              }
+                              className="rounded-lg border border-slate-700 bg-[#0F172A] px-3 py-2.5 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+                            >
+                              <option value="hoje">Hoje</option>
+                              <option value="7">Últimos 7 dias</option>
+                              <option value="30">Últimos 30 dias</option>
+                              <option value="todos">Todos</option>
+                            </select>
+                          </label>
+                        </div>
+
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <button
+                              type="button"
+                              onClick={alternarTodosResolvidosPdf}
+                              className={`inline-flex items-center gap-3 rounded-md border px-4 py-3 text-sm font-semibold transition ${
+                                todosResolvidosSelecionados
+                                  ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-100"
+                                  : "border-slate-700 bg-[#0F172A] text-slate-300 hover:border-slate-500 hover:text-white"
+                              }`}
+                            >
+                              <span
+                                className={`h-5 w-5 rounded border ${
+                                  todosResolvidosSelecionados
+                                    ? "border-emerald-300 bg-emerald-500"
+                                    : "border-slate-500 bg-slate-900"
+                                }`}
+                              />
+                              <span>
+                                {todosResolvidosSelecionados
+                                  ? "Todos selecionados"
+                                  : "Selecionar todos"}{" "}
+                                ({quantidadeSelecionadaHistorico})
+                              </span>
+                            </button>
+
+                            <span className="text-sm text-slate-400">
+                              {chamadosResolvidosFiltrados.length} resolvido(s)
+                              no filtro
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col gap-2 sm:items-end">
+                            <button
+                              onClick={exportarResolvidosPdf}
+                              className="rounded-md bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] transition hover:bg-emerald-500 active:scale-[0.98]"
+                            >
+                              Exportar PDF
+                            </button>
+                            <span className="text-xs text-slate-400">
+                              Selecione os cards que entram no relatorio
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {chamados
-                    .filter((chamado) =>
-                      aba === "historico"
-                        ? chamadoEstaNoHistorico(chamado)
-                        : aba === "andamento"
-                          ? chamado.status === "andamento"
-                          : aba === "urgentes"
-                            ? chamado.urgente && chamado.status !== "resolvido"
-                          : chamado.status === "aberto"
-                    )
-                    .map((chamado) => (
+                  {chamadosDaAba.map((chamado) => (
                       <div
                         key={chamado.id}
                         title={`Aberto por: ${chamado.criado_por_nome || "nao informado"}`}
@@ -3542,6 +3844,12 @@ export default function Home() {
                         )}
                       </div>
                     ))}
+
+                  {chamadosDaAba.length === 0 && (
+                    <p className="rounded-lg border border-slate-700/70 bg-[#1F2937]/70 p-5 text-sm text-slate-400">
+                      Nenhum chamado encontrado para este filtro.
+                    </p>
+                  )}
                 </div>
             )}
           </div>
