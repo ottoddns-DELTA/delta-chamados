@@ -89,6 +89,21 @@ def montar_detalhe_edicao_chamado(chamado, antes, depois):
     return '\n'.join(linhas)
 
 
+def chamado_teve_edicao_de_conteudo(antes, depois):
+    campos_de_conteudo = [
+        'Titulo',
+        'Descricao',
+        'Condominio',
+        'Urgente',
+        'Foto',
+    ]
+
+    return any(
+        str(antes.get(campo, '')) != str(depois.get(campo, ''))
+        for campo in campos_de_conteudo
+    )
+
+
 def chave_rate_limit_login(request, username):
     ip = get_client_ip(request) or 'sem-ip'
     usuario = (username or 'sem-usuario').strip().lower()
@@ -418,7 +433,6 @@ class ChamadoViewSet(viewsets.ModelViewSet):
             )
 
         campos_extras = {}
-        campos_extras['editado_por'] = self.request.user
 
         if novo_status == 'andamento' and status_anterior != 'andamento':
             campos_extras['assumido_por'] = self.request.user
@@ -431,6 +445,16 @@ class ChamadoViewSet(viewsets.ModelViewSet):
             'condominio',
         ).get(pk=chamado.pk)
         dados_depois = snapshot_chamado(chamado_atualizado)
+        if chamado_teve_edicao_de_conteudo(dados_antes, dados_depois):
+            editado_em = timezone.now()
+            chamado_atualizado.editado_por = self.request.user
+            chamado_atualizado.editado_em = editado_em
+            chamado_atualizado.save(
+                update_fields=['editado_por', 'editado_em', 'atualizado_em']
+            )
+            chamado.editado_por = self.request.user
+            chamado.editado_em = editado_em
+
         registrar_acao(
             self.request,
             'editou_chamado',

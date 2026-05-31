@@ -67,6 +67,11 @@ class Chamado(models.Model):
         related_name='chamados_editados'
     )
 
+    editado_em = models.DateTimeField(
+        blank=True,
+        null=True
+    )
+
     urgente = models.BooleanField(default=False)
 
     imagem = models.ImageField(

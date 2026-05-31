@@ -231,6 +231,7 @@ type Chamado = {
   status: "aberto" | "andamento" | "resolvido";
   criado_em?: string;
   atualizado_em?: string;
+  editado_em?: string | null;
   resolvido_em?: string | null;
   recebido_em?: string | null;
   visualizado_em?: string | null;
@@ -1391,8 +1392,8 @@ export default function Home() {
               <div><dt>Aberto por</dt><dd>${escaparHtml(chamado.criado_por_nome || "nao informado")}</dd></div>
               <div><dt>Aberto em</dt><dd>${escaparHtml(formatarData(chamado.criado_em))}</dd></div>
               <div><dt>Status de leitura</dt><dd>${escaparHtml(statusRecebimento(chamado))}</dd></div>
-              <div><dt>Editado por</dt><dd>${escaparHtml(chamado.editado_por_nome || "Nao editado")}</dd></div>
-              <div><dt>Ultima edicao</dt><dd>${escaparHtml(chamado.editado_por_nome ? formatarData(chamado.atualizado_em) : "Nao editado")}</dd></div>
+              <div><dt>Editado por</dt><dd>${escaparHtml(chamado.editado_em ? chamado.editado_por_nome || "nao informado" : "Nao editado")}</dd></div>
+              <div><dt>Ultima edicao</dt><dd>${escaparHtml(chamado.editado_em ? formatarData(chamado.editado_em) : "Nao editado")}</dd></div>
               <div><dt>Resolvido em</dt><dd>${escaparHtml(formatarData(chamado.resolvido_em))}</dd></div>
               <div><dt>Feito</dt><dd>${escaparHtml(chamado.descricao_resolucao || "Nao informado")}</dd></div>
               <div><dt>Foto da resolucao</dt><dd>${escaparHtml(chamado.imagem_resolucao ? "sim" : "nao")}</dd></div>
@@ -3367,6 +3368,16 @@ export default function Home() {
                               </strong>{" "}
                               em {formatarData(chamado.criado_em)}
                             </span>
+
+                            {chamado.editado_por_nome && chamado.editado_em && (
+                              <span className="text-slate-500">
+                                Editado por{" "}
+                                <strong className="font-semibold text-slate-400">
+                                  {chamado.editado_por_nome}
+                                </strong>
+                                {` em ${formatarData(chamado.editado_em)}`}
+                              </span>
+                            )}
 
                             {chamado.assumido_por_nome && (
                               <span className="text-blue-300">
