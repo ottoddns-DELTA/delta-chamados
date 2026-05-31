@@ -6,6 +6,7 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   type MouseEvent,
 } from "react";
@@ -17,6 +18,7 @@ const API_URL =
 const DIAS_NO_HISTORICO = 30;
 
 type Aba =
+  | "dashboard"
   | "chamados"
   | "abertos"
   | "andamento"
@@ -232,6 +234,7 @@ type Chamado = {
   descricao_resolucao?: string;
   condominio: number;
   condominio_nome?: string;
+  criado_por?: number | null;
   criado_por_nome?: string;
   assumido_por_nome?: string;
   editado_por_nome?: string;
@@ -307,6 +310,7 @@ function MenuIcon({
   tipo,
 }: {
   tipo:
+    | "dashboard"
     | "plus"
     | "inbox"
     | "clock"
@@ -324,6 +328,16 @@ function MenuIcon({
     strokeWidth: 1.8,
     viewBox: "0 0 24 24",
   };
+
+  if (tipo === "dashboard") {
+    return (
+      <svg {...common}>
+        <path d="M4 13h6V4H4Z" />
+        <path d="M14 20h6V4h-6Z" />
+        <path d="M4 20h6v-3H4Z" />
+      </svg>
+    );
+  }
 
   if (tipo === "plus") {
     return (
@@ -524,6 +538,66 @@ function statusRecebimento(chamado: Chamado) {
   return "Recebida pendente";
 }
 
+function minutosDesde(data?: string | null) {
+  if (!data) {
+    return 0;
+  }
+
+  return Math.max(
+    0,
+    Math.floor((Date.now() - new Date(data).getTime()) / 60000)
+  );
+}
+
+function nivelSla(chamado: Chamado) {
+  if (chamado.status === "resolvido") {
+    return "ok";
+  }
+
+  const minutos = minutosDesde(chamado.criado_em);
+  const limiteAtencao = chamado.urgente ? 10 : 60;
+  const limiteCritico = chamado.urgente ? 30 : 120;
+
+  if (minutos >= limiteCritico) {
+    return "critico";
+  }
+
+  if (minutos >= limiteAtencao) {
+    return "atencao";
+  }
+
+  return "ok";
+}
+
+function textoSla(chamado: Chamado) {
+  const minutos = minutosDesde(chamado.criado_em);
+
+  if (minutos < 60) {
+    return `${minutos} min`;
+  }
+
+  const horas = Math.floor(minutos / 60);
+  const resto = minutos % 60;
+
+  return resto ? `${horas}h ${resto}min` : `${horas}h`;
+}
+
+function classeSlaCard(chamado: Chamado) {
+  const nivel = nivelSla(chamado);
+
+  if (nivel === "critico") {
+    return "border-l-red-400/90 shadow-[0_0_0_1px_rgba(248,113,113,0.14)]";
+  }
+
+  if (nivel === "atencao") {
+    return "border-l-yellow-300/90 shadow-[0_0_0_1px_rgba(250,204,21,0.12)]";
+  }
+
+  return chamado.urgente
+    ? "border-l-red-400/80"
+    : "border-l-slate-600/70";
+}
+
 function escaparHtml(texto?: string | number | null) {
   return String(texto ?? "")
     .replaceAll("&", "&amp;")
@@ -647,6 +721,10 @@ export default function Home() {
   const [senha, setSenha] = useState("");
   const [erroLogin, setErroLogin] = useState("");
   const [mensagemPopup, setMensagemPopup] = useState("");
+  const [alertaNovoChamado, setAlertaNovoChamado] = useState<Chamado | null>(
+    null
+  );
+  const [notificacoesWebPendentes, setNotificacoesWebPendentes] = useState(0);
   const [melhorandoTexto, setMelhorandoTexto] = useState(false);
   const [menuUsuarioAberto, setMenuUsuarioAberto] = useState(false);
   const [modalSenhaAberto, setModalSenhaAberto] = useState(false);
@@ -654,7 +732,10 @@ export default function Home() {
   const [novaSenhaConta, setNovaSenhaConta] = useState("");
   const [confirmarNovaSenha, setConfirmarNovaSenha] = useState("");
 
-  const [aba, setAba] = useState<Aba>("chamados");
+  const chamadosConhecidosRef = useRef<Set<number>>(new Set());
+  const primeiraCargaChamadosRef = useRef(true);
+
+  const [aba, setAba] = useState<Aba>("dashboard");
   const [abaAdmin, setAbaAdmin] = useState<AbaAdmin>("usuarios");
   const [historicoCondominio, setHistoricoCondominio] = useState("");
   const [historicoPeriodo, setHistoricoPeriodo] =
@@ -753,6 +834,58 @@ export default function Home() {
   const chamadosResolvidos = useMemo(
     () => chamados.filter(chamadoEstaNoHistorico),
     [chamados]
+  );
+
+  const chamadosAbertosHoje = useMemo(() => {
+    const inicioDoDia = new Date();
+    inicioDoDia.setHours(0, 0, 0, 0);
+
+    return chamados.filter(
+      (chamado) =>
+        chamado.criado_em &&
+        new Date(chamado.criado_em).getTime() >= inicioDoDia.getTime()
+    ).length;
+  }, [chamados]);
+
+  const chamadosResolvidosHoje = useMemo(() => {
+    const inicioDoDia = new Date();
+    inicioDoDia.setHours(0, 0, 0, 0);
+
+    return chamados.filter(
+      (chamado) =>
+        chamado.status === "resolvido" &&
+        chamado.resolvido_em &&
+        new Date(chamado.resolvido_em).getTime() >= inicioDoDia.getTime()
+    ).length;
+  }, [chamados]);
+
+  const chamadosSlaAtencao = useMemo(
+    () =>
+      chamados.filter(
+        (chamado) =>
+          chamado.status !== "resolvido" && nivelSla(chamado) !== "ok"
+      ),
+    [chamados]
+  );
+
+  const chamadosPrioritariosDashboard = useMemo(
+    () =>
+      [...chamadosAbertos, ...chamadosEmAtendimento]
+        .sort((a, b) => {
+          const peso = (chamado: Chamado) =>
+            (nivelSla(chamado) === "critico"
+              ? 3
+              : nivelSla(chamado) === "atencao"
+                ? 2
+                : 1) + (chamado.urgente ? 1 : 0);
+
+          return (
+            peso(b) - peso(a) ||
+            minutosDesde(b.criado_em) - minutosDesde(a.criado_em)
+          );
+        })
+        .slice(0, 5),
+    [chamadosAbertos, chamadosEmAtendimento]
   );
 
   const chamadosResolvidosFiltrados = useMemo(
@@ -978,7 +1111,89 @@ export default function Home() {
       headers: authHeaders,
     });
     const data = (await response.json()) as Chamado[];
-    setChamados(marcarRecebidosDaLista(data));
+    atualizarChamados(data);
+  }
+
+  function chamadoCriadoPeloUsuarioAtual(chamado: Chamado) {
+    if (!usuarioLogado) {
+      return false;
+    }
+
+    if (chamado.criado_por && chamado.criado_por === usuarioLogado.id) {
+      return true;
+    }
+
+    const nomeCriador = normalizarBusca(chamado.criado_por_nome || "");
+
+    return (
+      nomeCriador !== "" &&
+      (nomeCriador === normalizarBusca(usuarioLogado.username) ||
+        nomeCriador === normalizarBusca(usuarioLogado.nome))
+    );
+  }
+
+  function tocarSomNovoChamado() {
+    try {
+      const AudioContextClass =
+        window.AudioContext ||
+        (
+          window as typeof window & {
+            webkitAudioContext?: typeof AudioContext;
+          }
+        ).webkitAudioContext;
+
+      if (!AudioContextClass) {
+        return;
+      }
+
+      const contexto = new AudioContextClass();
+      const ganho = contexto.createGain();
+      const oscilador = contexto.createOscillator();
+
+      oscilador.type = "sine";
+      oscilador.frequency.setValueAtTime(740, contexto.currentTime);
+      oscilador.frequency.setValueAtTime(920, contexto.currentTime + 0.12);
+      ganho.gain.setValueAtTime(0.0001, contexto.currentTime);
+      ganho.gain.exponentialRampToValueAtTime(0.08, contexto.currentTime + 0.02);
+      ganho.gain.exponentialRampToValueAtTime(0.0001, contexto.currentTime + 0.32);
+      oscilador.connect(ganho);
+      ganho.connect(contexto.destination);
+      oscilador.start();
+      oscilador.stop(contexto.currentTime + 0.34);
+    } catch {
+      return;
+    }
+  }
+
+  function atualizarChamados(lista: Chamado[]) {
+    const listaTratada = marcarRecebidosDaLista(lista);
+    const idsAnteriores = chamadosConhecidosRef.current;
+    const primeiraCarga = primeiraCargaChamadosRef.current;
+    const novosChamados = listaTratada.filter(
+      (chamado) =>
+        !idsAnteriores.has(chamado.id) &&
+        chamado.status !== "resolvido" &&
+        !chamadoCriadoPeloUsuarioAtual(chamado)
+    );
+
+    chamadosConhecidosRef.current = new Set(
+      listaTratada.map((chamado) => chamado.id)
+    );
+    primeiraCargaChamadosRef.current = false;
+
+    if (!primeiraCarga && novosChamados.length > 0) {
+      const chamadoMaisRecente = novosChamados.sort(
+        (a, b) =>
+          new Date(b.criado_em || "").getTime() -
+          new Date(a.criado_em || "").getTime()
+      )[0];
+
+      setAlertaNovoChamado(chamadoMaisRecente);
+      setNotificacoesWebPendentes((total) => total + novosChamados.length);
+      tocarSomNovoChamado();
+    }
+
+    setChamados(listaTratada);
   }
 
   async function marcarVisualizado(chamado: Chamado) {
@@ -1779,7 +1994,11 @@ export default function Home() {
     localStorage.setItem("delta-user", JSON.stringify(data.user));
     setToken(data.token);
     setUsuarioLogado(data.user);
-    setAba("chamados");
+    chamadosConhecidosRef.current = new Set();
+    primeiraCargaChamadosRef.current = true;
+    setNotificacoesWebPendentes(0);
+    setAlertaNovoChamado(null);
+    setAba("dashboard");
     setAbaAdmin("usuarios");
     setMenuUsuarioAberto(false);
     setLogado(true);
@@ -1799,7 +2018,11 @@ export default function Home() {
     setUsuario("");
     setSenha("");
     setErroLogin("");
-    setAba("chamados");
+    chamadosConhecidosRef.current = new Set();
+    primeiraCargaChamadosRef.current = true;
+    setNotificacoesWebPendentes(0);
+    setAlertaNovoChamado(null);
+    setAba("dashboard");
     setAbaAdmin("usuarios");
   }
 
@@ -1881,6 +2104,18 @@ export default function Home() {
   }, [mensagemPopup]);
 
   useEffect(() => {
+    if (!alertaNovoChamado) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setAlertaNovoChamado(null);
+    }, 8000);
+
+    return () => window.clearTimeout(timeout);
+  }, [alertaNovoChamado]);
+
+  useEffect(() => {
     if (!logado || !token) {
       return;
     }
@@ -1900,7 +2135,7 @@ export default function Home() {
       ]);
 
       if (ativo) {
-        setChamados(marcarRecebidosDaLista(listaChamados));
+        atualizarChamados(listaChamados);
         setCondominios(ordenarCondominios(listaCondominios));
       }
     }
@@ -1920,7 +2155,7 @@ export default function Home() {
         .then((response) => response.json())
         .then((listaChamados) => {
           if (ativo) {
-            setChamados(marcarRecebidosDaLista(listaChamados));
+            atualizarChamados(listaChamados);
           }
         })
         .catch(() => undefined);
@@ -1935,6 +2170,8 @@ export default function Home() {
       window.removeEventListener("focus", atualizarQuandoVoltar);
       document.removeEventListener("visibilitychange", atualizarQuandoVoltar);
     };
+  // atualizarChamados uses refs to compare polling results without restarting the polling loop on every render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authHeaders, logado, marcarRecebidosDaLista, token, usuarioLogado?.perfil]);
 
   if (!logado) {
@@ -2176,6 +2413,43 @@ export default function Home() {
         </div>
       )}
 
+      {alertaNovoChamado && (
+        <button
+          type="button"
+          onClick={() => {
+            setAba("abertos");
+            setAlertaNovoChamado(null);
+            setNotificacoesWebPendentes(0);
+          }}
+          className="fixed right-5 top-5 z-50 max-w-sm rounded-xl border border-blue-400/40 bg-[#111827]/95 p-4 text-left shadow-2xl shadow-black/40 backdrop-blur transition hover:border-blue-300"
+        >
+          <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-200">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20 text-blue-100">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.8"
+                viewBox="0 0 24 24"
+              >
+                <path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" />
+                <path d="M10 20a2 2 0 0 0 4 0" />
+              </svg>
+            </span>
+            Novo chamado cadastrado
+          </span>
+          <span className="block text-sm font-semibold text-white">
+            {alertaNovoChamado.condominio_nome ||
+              alertaNovoChamado.condominio}
+          </span>
+          <span className="mt-1 block text-sm text-slate-300">
+            {alertaNovoChamado.titulo}
+          </span>
+        </button>
+      )}
+
       {modalSenhaAberto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
           <div className="w-full max-w-md rounded-xl border border-slate-700/70 bg-[#1F2937] p-6 shadow-2xl">
@@ -2305,6 +2579,13 @@ export default function Home() {
 
               <div className="grid gap-1">
                 <SidebarItem
+                  ativo={aba === "dashboard"}
+                  icone="dashboard"
+                  label="Painel"
+                  onClick={() => setAba("dashboard")}
+                />
+
+                <SidebarItem
                   ativo={aba === "chamados"}
                   icone="plus"
                   label="Abrir Chamado"
@@ -2393,18 +2674,49 @@ export default function Home() {
                 </p>
               </div>
 
-              <div
-                className="relative hidden lg:block"
-                onMouseEnter={() => setMenuUsuarioAberto(true)}
-                onMouseLeave={() => setMenuUsuarioAberto(false)}
-              >
+              <div className="hidden items-start gap-3 lg:flex">
                 <button
                   type="button"
-                  onClick={() =>
-                    setMenuUsuarioAberto((menuAberto) => !menuAberto)
-                  }
-                  className="flex items-center gap-2 rounded-md border border-blue-400/45 bg-blue-600/15 px-3 py-2 text-left shadow-lg shadow-black/10 transition hover:border-blue-300 hover:bg-blue-500/20"
+                  onClick={() => {
+                    setAba("abertos");
+                    setNotificacoesWebPendentes(0);
+                    setAlertaNovoChamado(null);
+                  }}
+                  title="Alertas de novos chamados"
+                  className="relative flex h-12 w-12 items-center justify-center rounded-md border border-blue-400/45 bg-blue-600/15 text-blue-100 shadow-lg shadow-black/10 transition hover:border-blue-300 hover:bg-blue-500/20"
                 >
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.8"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" />
+                    <path d="M10 20a2 2 0 0 0 4 0" />
+                  </svg>
+
+                  {notificacoesWebPendentes > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white ring-2 ring-[#0F172A]">
+                      {notificacoesWebPendentes}
+                    </span>
+                  )}
+                </button>
+
+                <div
+                  className="relative"
+                  onMouseEnter={() => setMenuUsuarioAberto(true)}
+                  onMouseLeave={() => setMenuUsuarioAberto(false)}
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMenuUsuarioAberto((menuAberto) => !menuAberto)
+                    }
+                    className="flex items-center gap-2 rounded-md border border-blue-400/45 bg-blue-600/15 px-3 py-2 text-left shadow-lg shadow-black/10 transition hover:border-blue-300 hover:bg-blue-500/20"
+                  >
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-blue-700">
                     <svg
                       aria-hidden="true"
@@ -2424,7 +2736,7 @@ export default function Home() {
                       {usuarioLogado?.username}
                     </span>
                   </span>
-                </button>
+                  </button>
 
                 <div
                   className={`absolute right-0 top-[calc(100%-1px)] z-20 w-56 overflow-hidden rounded-xl border border-white/10 bg-[#1F2937]/85 text-white shadow-2xl shadow-black/40 backdrop-blur-xl transition ${
@@ -2485,8 +2797,139 @@ export default function Home() {
                     Sair
                   </button>
                 </div>
+                </div>
               </div>
             </div>
+
+            {aba === "dashboard" && (
+              <div className="grid gap-6">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-5 shadow-xl">
+                    <p className="text-sm text-slate-400">Abertos hoje</p>
+                    <p className="mt-2 text-3xl font-bold text-white">
+                      {chamadosAbertosHoje}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-5 shadow-xl">
+                    <p className="text-sm text-slate-400">Em aberto</p>
+                    <p className="mt-2 text-3xl font-bold text-emerald-300">
+                      {chamadosAbertos.length}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-5 shadow-xl">
+                    <p className="text-sm text-slate-400">SLA em atenção</p>
+                    <p
+                      className={`mt-2 text-3xl font-bold ${
+                        chamadosSlaAtencao.length > 0
+                          ? "text-yellow-300"
+                          : "text-slate-200"
+                      }`}
+                    >
+                      {chamadosSlaAtencao.length}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-5 shadow-xl">
+                    <p className="text-sm text-slate-400">Resolvidos hoje</p>
+                    <p className="mt-2 text-3xl font-bold text-blue-300">
+                      {chamadosResolvidosHoje}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-slate-700/70 bg-[#1F2937] p-5 shadow-xl">
+                  <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-xl font-semibold">
+                        Prioridade operacional
+                      </h2>
+                      <p className="mt-1 text-sm text-slate-400">
+                        Chamados abertos ou em andamento com acompanhamento de
+                        SLA.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setAba("abertos")}
+                      className="rounded-md border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-blue-400 hover:text-white"
+                    >
+                      Ver fila
+                    </button>
+                  </div>
+
+                  <div className="grid gap-3">
+                    {chamadosPrioritariosDashboard.map((chamado) => {
+                      const nivel = nivelSla(chamado);
+
+                      return (
+                        <button
+                          key={chamado.id}
+                          type="button"
+                          onClick={() =>
+                            setAba(
+                              chamado.status === "andamento"
+                                ? "andamento"
+                                : "abertos"
+                            )
+                          }
+                          className={`rounded-lg border border-l-4 bg-[#0F172A] p-4 text-left transition hover:border-slate-500 ${classeSlaCard(
+                            chamado
+                          )}`}
+                        >
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <p className="text-base font-semibold uppercase text-white">
+                                {chamado.condominio_nome || chamado.condominio}
+                              </p>
+                              <p className="mt-1 text-sm text-slate-300">
+                                {chamado.titulo}
+                              </p>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              {chamado.urgente && (
+                                <span className="rounded-full border border-red-400/25 bg-red-500/15 px-2.5 py-1 text-[11px] font-semibold text-red-300">
+                                  Urgente
+                                </span>
+                              )}
+
+                              <span
+                                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                                  nivel === "critico"
+                                    ? "border-red-400/30 bg-red-500/15 text-red-300"
+                                    : nivel === "atencao"
+                                      ? "border-yellow-400/30 bg-yellow-500/15 text-yellow-200"
+                                      : "border-emerald-400/20 bg-emerald-500/10 text-emerald-300"
+                                }`}
+                              >
+                                {nivel === "critico"
+                                  ? "SLA crítico"
+                                  : nivel === "atencao"
+                                    ? "SLA atenção"
+                                    : "SLA ok"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <p className="mt-3 text-xs text-slate-400">
+                            Aberto há {textoSla(chamado)} • {chamado.status}
+                          </p>
+                        </button>
+                      );
+                    })}
+
+                    {chamadosPrioritariosDashboard.length === 0 && (
+                      <p className="rounded-lg border border-slate-700 bg-[#0F172A] p-4 text-sm text-slate-400">
+                        Nenhum chamado ativo no momento.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {aba === "condominios" && (
               <>
@@ -3386,9 +3829,7 @@ export default function Home() {
                           aba === "historico" &&
                           chamadosSelecionadosPdf.includes(chamado.id)
                             ? "border-emerald-400/70 shadow-[0_0_0_1px_rgba(16,185,129,0.18),0_20px_40px_rgba(15,23,42,0.35)]"
-                            : chamado.urgente
-                              ? "border-slate-700/70 border-l-red-400/80"
-                              : "border-slate-700/70 border-l-slate-600/70"
+                            : `border-slate-700/70 ${classeSlaCard(chamado)}`
                         } ${aba === "historico" ? "pb-4" : ""} ${
                           usuarioLogado?.perfil === "tecnico"
                             ? "cursor-pointer"
@@ -3578,6 +4019,21 @@ export default function Home() {
                                 Urgente
                               </span>
                             )}
+
+                            {chamado.status !== "resolvido" &&
+                              nivelSla(chamado) !== "ok" && (
+                                <span
+                                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                                    nivelSla(chamado) === "critico"
+                                      ? "border-red-400/30 bg-red-500/15 text-red-300"
+                                      : "border-yellow-400/30 bg-yellow-500/15 text-yellow-200"
+                                  }`}
+                                >
+                                  {nivelSla(chamado) === "critico"
+                                    ? "SLA crítico"
+                                    : "SLA atenção"}
+                                </span>
+                              )}
 
                             <span
                               className={`
